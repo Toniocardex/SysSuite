@@ -16,16 +16,20 @@
         </StackPanel>
         <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button x:Name="BtnLoadDrivers" Content="Carica tutti i driver" Style="{StaticResource SysButtonSecondary}" Click="BtnLoad_Click"/>
-                <Button x:Name="BtnProblematic" Content="Mostra solo problematici" Style="{StaticResource SysButtonSecondary}" Click="BtnProblematic_Click"/>
-                <Button x:Name="BtnBackupDrivers" Content="Backup driver (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnBackup_Click"/>
-                <ProgressRing x:Name="RingDriverBusy" Width="22" Height="22" VerticalAlignment="Center"
-                    IsActive="False" Visibility="Collapsed"/>
-                <TextBlock x:Name="TxtCount" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
+                <Button Content="Carica tutti i driver" Style="{StaticResource SysButtonSecondary}"
+                    Command="{Binding LoadDriversCommand}" IsEnabled="{Binding AreDriverActionsEnabled}"/>
+                <Button Content="Mostra solo problematici" Style="{StaticResource SysButtonSecondary}"
+                    Command="{Binding LoadProblematicCommand}" IsEnabled="{Binding AreDriverActionsEnabled}"/>
+                <Button Content="Backup driver (Desktop)" Style="{StaticResource SysButtonPrimary}"
+                    Command="{Binding BackupDriversCommand}" IsEnabled="{Binding AreDriverActionsEnabled}"/>
+                <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                    IsActive="{Binding IsBusy}" Visibility="{Binding BusyRingVisibility}"/>
+                <TextBlock Text="{Binding StatusLine}" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
         <Border Grid.Row="2" Style="{StaticResource SysCard}">
-            <ListView x:Name="LvDrivers" Background="Transparent" BorderThickness="0">
+            <ListView ItemsSource="{Binding DriverRows}" Background="Transparent" BorderThickness="0"
+                IsEnabled="{Binding AreDriverActionsEnabled}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Padding="0,5">

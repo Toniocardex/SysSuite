@@ -1,10 +1,13 @@
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Serilog;
 using SysSuite.Core;
+using SysSuite.Services;
+using SysSuite.ViewModels;
 
 namespace SysSuite
 {
@@ -12,11 +15,28 @@ namespace SysSuite
     {
         internal MainWindow? _window;
 
+        public static IServiceProvider Services { get; private set; } = null!;
+
         public App()
         {
             ConfigureLogging();
+            ConfigureServices();
             UnhandledException += OnUnhandledException;
             InitializeComponent();
+        }
+
+        private static void ConfigureServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<BatteryService>();
+            services.AddSingleton<NetworkService>();
+            services.AddSingleton<GamingService>();
+            services.AddSingleton<DriverService>();
+            services.AddTransient<BatteryViewModel>();
+            services.AddTransient<NetworkViewModel>();
+            services.AddTransient<GamingViewModel>();
+            services.AddTransient<DriverViewModel>();
+            Services = services.BuildServiceProvider();
         }
 
         private static void ConfigureLogging()

@@ -4,22 +4,23 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.WinUI"
     Background="{StaticResource SysBGBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <!-- DataContext = ViewModel (code-behind). Binding equivale a x:Bind verso il VM per questo toolchain WinUI + source generator. -->
+    <ScrollViewer x:Name="RootHost" VerticalScrollBarVisibility="Auto">
         <StackPanel Padding="32,24" Spacing="20" MaxWidth="1100" HorizontalAlignment="Center">
             <StackPanel Spacing="4">
                 <TextBlock Text="Batteria" Style="{StaticResource SysHeading1}"/>
                 <TextBlock Text="Salute della batteria, cicli e report completo." Style="{StaticResource SysBodyText}"/>
             </StackPanel>
 
-            <!-- Info batteria con donut -->
             <Border x:Name="CardBattery" Style="{StaticResource SysCard}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="STATO BATTERIA" Style="{StaticResource SysHeading3}"/>
-                    <TextBlock x:Name="TxtNoBattery"
+                    <TextBlock
                         Text="Nessuna batteria rilevata su questo dispositivo."
-                        Style="{StaticResource SysBodyText}" Visibility="Collapsed"/>
+                        Style="{StaticResource SysBodyText}"
+                        Visibility="{Binding NoBatteryPanelVisibility}"/>
 
-                    <Grid x:Name="GridBattery" Visibility="Collapsed">
+                    <Grid Visibility="{Binding BatteryGridVisibility}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -36,8 +37,7 @@
                                     LegendPosition="Hidden"
                                     TooltipPosition="Hidden"/>
                                 <TextBlock
-                                    x:Name="TxtHealth"
-                                    Text="—"
+                                    Text="{Binding HealthPercentText}"
                                     FontFamily="Consolas"
                                     FontSize="20"
                                     FontWeight="Bold"
@@ -57,8 +57,7 @@
                                     LegendPosition="Hidden"
                                     TooltipPosition="Hidden"/>
                                 <TextBlock
-                                    x:Name="TxtCharge"
-                                    Text="—"
+                                    Text="{Binding ChargePercentText}"
                                     FontFamily="Consolas"
                                     FontSize="20"
                                     FontWeight="Bold"
@@ -70,25 +69,27 @@
 
                         <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="DETTAGLI" Style="{StaticResource SysHeading3}"/>
-                            <TextBlock x:Name="TxtBattName" Text="—"
+                            <TextBlock Text="{Binding BatteryNameText}"
                                 Style="{StaticResource SysBodyText}" TextWrapping="Wrap"/>
-                            <TextBlock x:Name="TxtStatus" Text="—" Style="{StaticResource SysCaption}"/>
+                            <TextBlock Text="{Binding StatusDescriptionText}" Style="{StaticResource SysCaption}"/>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <!-- Azioni -->
             <Border Style="{StaticResource SysCard}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="AZIONI" Style="{StaticResource SysHeading3}"/>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="BtnRefreshBattery" Content="Aggiorna info" Style="{StaticResource SysButtonSecondary}" Click="BtnRefresh_Click"/>
-                        <Button x:Name="BtnBatteryReport" Content="Genera report HTML (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnReport_Click"/>
-                        <ProgressRing x:Name="RingBatteryBusy" Width="22" Height="22" VerticalAlignment="Center"
-                            IsActive="False" Visibility="Collapsed"/>
+                        <Button Content="Aggiorna info" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding RefreshCommand}"/>
+                        <Button Content="Genera report HTML (Desktop)" Style="{StaticResource SysButtonPrimary}"
+                            Command="{Binding GenerateReportCommand}"/>
+                        <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                            IsActive="{Binding IsBusy}"
+                            Visibility="{Binding BusyRingVisibility}"/>
                     </StackPanel>
-                    <TextBlock x:Name="TxtResult" Text="" Style="{StaticResource SysAccentText}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding ResultMessage}" Style="{StaticResource SysAccentText}" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
         </StackPanel>

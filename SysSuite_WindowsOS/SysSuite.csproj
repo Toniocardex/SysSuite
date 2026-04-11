@@ -81,6 +81,8 @@
     <!-- Logging strutturato su file (rotazione giornaliera) -->
     <PackageReference Include="Serilog" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
   <!-- XAML inclusi automaticamente da SDK e WinUI: non ripetere Page qui (NETSDK1022) -->

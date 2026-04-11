@@ -20,7 +20,6 @@
             <TextBlock Text="Ottimizza DNS, TCP/IP, misura la velocità e scansiona le porte aperte." Style="{StaticResource SysBodyText}"/>
         </StackPanel>
 
-        <!-- IP Pubblico + Speed Test affiancati -->
         <Grid Grid.Row="1" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -28,7 +27,6 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- IP Pubblico -->
             <Border Grid.Column="0" Style="{StaticResource SysCard}">
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="10">
@@ -36,17 +34,17 @@
                             Foreground="#00D4A0" VerticalAlignment="Center"/>
                         <TextBlock Text="IL TUO IP PUBBLICO" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock x:Name="TxtPublicIp" Text="—" FontFamily="Consolas" FontSize="20"
+                    <TextBlock Text="{Binding PublicIpText}" FontFamily="Consolas" FontSize="20"
                         FontWeight="Bold" Foreground="#00D4A0"/>
-                    <TextBlock x:Name="TxtIpIsp" Text="" FontFamily="Consolas" FontSize="11" Foreground="#7A8BA8"/>
-                    <TextBlock x:Name="TxtIpLocation" Text="" FontFamily="Consolas" FontSize="11" Foreground="#3D4D66"/>
-                    <Button x:Name="BtnCheckIp" Content="Rileva IP pubblico" Style="{StaticResource SysButtonSecondary}"
-                        Click="BtnCheckIp_Click"
+                    <TextBlock Text="{Binding IpIspText}" FontFamily="Consolas" FontSize="11" Foreground="#7A8BA8"/>
+                    <TextBlock Text="{Binding IpLocationText}" FontFamily="Consolas" FontSize="11" Foreground="#3D4D66"/>
+                    <Button Content="Rileva IP pubblico" Style="{StaticResource SysButtonSecondary}"
+                        Command="{Binding CheckPublicIpCommand}"
+                        IsEnabled="{Binding IsCheckIpButtonEnabled}"
                         ToolTipService.ToolTip="Interroga un servizio esterno per mostrare il tuo indirizzo IP pubblico, ISP e posizione approssimativa."/>
                 </StackPanel>
             </Border>
 
-            <!-- Speed Test -->
             <Border Grid.Column="2" Style="{StaticResource SysCard}">
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="10">
@@ -54,74 +52,85 @@
                             Foreground="#3B9EFF" VerticalAlignment="Center"/>
                         <TextBlock Text="SPEED TEST" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock x:Name="TxtSpeedResult" Text="—" FontFamily="Consolas" FontSize="20"
-                        FontWeight="Bold" Foreground="#3B9EFF"/>
-                    <TextBlock x:Name="TxtSpeedDetail" Text="Scarica ~10 MB da Cloudflare per misurare la banda."
+                    <TextBlock Text="{Binding SpeedResultText}" FontFamily="Consolas" FontSize="20"
+                        FontWeight="Bold" Foreground="{Binding SpeedResultBrush}"/>
+                    <TextBlock Text="{Binding SpeedDetailText}"
                         FontFamily="Consolas" FontSize="11" Foreground="#3D4D66" TextWrapping="Wrap"/>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="BtnSpeedTest" Content="Avvia Speed Test" Style="{StaticResource SysButtonPrimary}"
-                            Click="BtnSpeedTest_Click"
+                        <Button Content="Avvia Speed Test" Style="{StaticResource SysButtonPrimary}"
+                            Command="{Binding SpeedTestCommand}"
+                            IsEnabled="{Binding IsSpeedTestButtonEnabled}"
                             ToolTipService.ToolTip="Scarica ~10 MB da un server Cloudflare e calcola la velocità media in download. Non richiede admin."/>
-                        <ProgressBar x:Name="PbSpeed" Style="{StaticResource SysProgressBar}" Width="120"
-                            VerticalAlignment="Center" IsIndeterminate="False"/>
+                        <ProgressBar Style="{StaticResource SysProgressBar}" Width="120"
+                            VerticalAlignment="Center" IsIndeterminate="{Binding IsSpeedTestBusy}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>
 
-        <!-- Azioni rapide DNS / TCP -->
         <Border Grid.Row="2" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <TextBlock Text="OTTIMIZZAZIONE RETE" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <ProgressRing x:Name="RingNetworkOpt" Width="22" Height="22" VerticalAlignment="Center"
-                        IsActive="False" Visibility="Collapsed"/>
+                    <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="{Binding IsNetworkOptBusy}"
+                        Visibility="{Binding NetworkOptRingVisibility}"/>
                 </StackPanel>
                 <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="BtnFlushDNS" Content="Svuota DNS" Style="{StaticResource SysButtonSecondary}" Click="BtnFlushDNS_Click"/>
-                        <Button x:Name="BtnResetTCP" Content="Reset TCP/IP" Style="{StaticResource SysButtonSecondary}" Click="BtnResetTCP_Click"/>
-                        <Button x:Name="BtnResetWinsock" Content="Reset Winsock" Style="{StaticResource SysButtonSecondary}" Click="BtnResetWinsock_Click"/>
+                        <Button Content="Svuota DNS" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding FlushDnsCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
+                        <Button Content="Reset TCP/IP" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding ResetTcpCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
+                        <Button Content="Reset Winsock" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding ResetWinsockCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="BtnDNSGoogle" Content="DNS Google (8.8.8.8)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSGoogle_Click"/>
-                        <Button x:Name="BtnDNSCF" Content="DNS Cloudflare (1.1.1.1)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSCF_Click"/>
-                        <Button x:Name="BtnNagleOff" Content="Nagle OFF (gaming)" Style="{StaticResource SysButtonSecondary}" Click="BtnNagleOff_Click"/>
-                        <Button x:Name="BtnNagleRestore" Content="Ripristina Nagle" Style="{StaticResource SysButtonSecondary}" Click="BtnNagleRestore_Click"/>
-                        <Button x:Name="BtnDNSDHCP" Content="DNS automatico (DHCP)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSDHCP_Click"/>
+                        <Button Content="DNS Google (8.8.8.8)" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding DnsGoogleCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
+                        <Button Content="DNS Cloudflare (1.1.1.1)" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding DnsCloudflareCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
+                        <Button Content="Nagle OFF (gaming)" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding NagleOffCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
+                        <Button Content="Ripristina Nagle" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding NagleRestoreCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
+                        <Button Content="DNS automatico (DHCP)" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding DnsDhcpCommand}" IsEnabled="{Binding AreNetworkOptButtonsEnabled}"/>
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <!-- Tool Ping -->
         <Border Grid.Row="3" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="10">
                 <TextBlock Text="TOOL PING" Style="{StaticResource SysHeading3}"/>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox x:Name="TxtPingHost" PlaceholderText="Host o IP (es. 8.8.8.8)"
-                        Style="{StaticResource SysTextBox}" Width="240"/>
-                    <Button x:Name="BtnPing" Content="Ping" Style="{StaticResource SysButtonPrimary}" Click="BtnPing_Click"/>
-                    <ProgressRing x:Name="RingPing" Width="20" Height="20" VerticalAlignment="Center"
-                        IsActive="False" Visibility="Collapsed"/>
-                    <TextBlock x:Name="TxtPingResult" FontFamily="Consolas" FontSize="13"
-                        Foreground="#00D4A0" VerticalAlignment="Center"/>
+                    <TextBox PlaceholderText="Host o IP (es. 8.8.8.8)"
+                        Style="{StaticResource SysTextBox}" Width="240"
+                        Text="{Binding PingHost, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    <Button Content="Ping" Style="{StaticResource SysButtonPrimary}"
+                        Command="{Binding PingCommand}" IsEnabled="{Binding IsPingButtonEnabled}"/>
+                    <ProgressRing Width="20" Height="20" VerticalAlignment="Center"
+                        IsActive="{Binding IsPingBusy}" Visibility="{Binding PingRingVisibility}"/>
+                    <TextBlock Text="{Binding PingResultText}" FontFamily="Consolas" FontSize="13"
+                        Foreground="{Binding PingResultBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <!-- Scanner porte -->
         <Border Grid.Row="4" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="12">
                 <TextBlock Text="SCANNER PORTE" Style="{StaticResource SysHeading3}"/>
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button x:Name="BtnScanPorts" Content="Avvia scansione" Style="{StaticResource SysButtonPrimary}" Click="BtnScan_Click"/>
-                    <ProgressRing x:Name="RingScanPorts" Width="22" Height="22" VerticalAlignment="Center"
-                        IsActive="False" Visibility="Collapsed"/>
-                    <ProgressBar x:Name="PbScan" Style="{StaticResource SysProgressBar}" Width="200" VerticalAlignment="Center" Maximum="100"/>
-                    <TextBlock x:Name="TxtScanStatus" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
+                    <Button Content="Avvia scansione" Style="{StaticResource SysButtonPrimary}"
+                        Command="{Binding ScanPortsCommand}" IsEnabled="{Binding IsScanButtonEnabled}"/>
+                    <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="{Binding IsScanBusy}" Visibility="{Binding ScanRingVisibility}"/>
+                    <ProgressBar Style="{StaticResource SysProgressBar}" Width="200" VerticalAlignment="Center"
+                        Maximum="100" Value="{Binding ScanProgress, Mode=OneWay}"/>
+                    <TextBlock Text="{Binding ScanStatusText}" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
                 </StackPanel>
-                <ListView x:Name="LvPorts" MaxHeight="140" Background="Transparent" BorderThickness="0">
+                <ListView ItemsSource="{Binding PortEntries}" MaxHeight="140" Background="Transparent" BorderThickness="0">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" Spacing="16" Padding="0,4">
@@ -135,16 +144,16 @@
             </StackPanel>
         </Border>
 
-        <!-- Log -->
         <Border Grid.Row="5" Style="{StaticResource SysCard}">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
                     <TextBlock Text="LOG" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Click="BtnClear_Click"/>
+                    <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Command="{Binding ClearLogCommand}"/>
                 </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8" TextWrapping="Wrap"/>
+                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8" TextWrapping="Wrap"
+                        Text="{Binding LogText}"/>
                 </ScrollViewer>
             </Grid>
         </Border>

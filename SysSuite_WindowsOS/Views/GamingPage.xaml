@@ -16,7 +16,6 @@
             <TextBlock Text="Massimizza FPS, riduce latenza, ferma i servizi non necessari." Style="{StaticResource SysBodyText}"/>
         </StackPanel>
 
-        <!-- Stato + pulsanti -->
         <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,20">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -25,24 +24,27 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="#FF5A5A" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="TxtStatus" Text="Gaming Mode INATTIVA" FontFamily="Consolas"
+                        <Ellipse Width="12" Height="12" Fill="{Binding StatusDotFill}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding StatusHeadline}" FontFamily="Consolas"
                             FontSize="16" FontWeight="Bold" Foreground="#ECF0F8" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="Attivando: piano Ultimate Performance, HAGS, Nagle off, servizi Xbox sospesi, aggiornamenti sospesi." 
+                    <TextBlock Text="Attivando: piano Ultimate Performance, HAGS, Nagle off, servizi Xbox sospesi, aggiornamenti sospesi."
                         Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <ProgressRing x:Name="BusyRing" Width="32" Height="32" IsActive="True" Visibility="Collapsed"/>
-                    <Button x:Name="BtnActivate" Content="ATTIVA" Style="{StaticResource SysButtonPrimary}" Click="BtnActivate_Click" MinWidth="120"
+                    <ProgressRing Width="32" Height="32" IsActive="{Binding IsBusy}" Visibility="{Binding BusyRingVisibility}"/>
+                    <Button Content="ATTIVA" Style="{StaticResource SysButtonPrimary}" MinWidth="120"
+                        Command="{Binding ActivateCommand}"
+                        IsEnabled="{Binding IsActivateButtonEnabled}"
                         ToolTipService.ToolTip="Attiva piano Ultimate Performance, HAGS, disabilita Nagle, ferma servizi Xbox e aggiornamenti. Richiede admin."/>
-                    <Button x:Name="BtnDeactivate" Content="DISATTIVA" Style="{StaticResource SysButtonSecondary}" Click="BtnDeactivate_Click" MinWidth="120" IsEnabled="False"
+                    <Button Content="DISATTIVA" Style="{StaticResource SysButtonSecondary}" MinWidth="120"
+                        Command="{Binding DeactivateCommand}"
+                        IsEnabled="{Binding IsDeactivateButtonEnabled}"
                         ToolTipService.ToolTip="Ripristina piano bilanciato, riattiva Nagle e servizi Xbox. Richiede admin."/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Log operazioni -->
         <Border Grid.Row="2" Style="{StaticResource SysCard}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -51,11 +53,11 @@
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
                     <TextBlock Text="LOG OPERAZIONI" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Click="BtnClearLog_Click"/>
+                    <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Command="{Binding ClearLogCommand}"/>
                 </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8"
-                        TextWrapping="Wrap" Text="Pronto. Usa i pulsanti sopra per attivare o disattivare Gaming Mode."/>
+                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8"
+                        TextWrapping="Wrap" Text="{Binding LogText}"/>
                 </ScrollViewer>
             </Grid>
         </Border>
