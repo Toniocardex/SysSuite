@@ -1,0 +1,97 @@
+<Page
+    x:Class="SysSuite.Views.BatteryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.WinUI"
+    Background="{StaticResource SysBGBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Padding="32,24" Spacing="20" MaxWidth="1100" HorizontalAlignment="Center">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Batteria" Style="{StaticResource SysHeading1}"/>
+                <TextBlock Text="Salute della batteria, cicli e report completo." Style="{StaticResource SysBodyText}"/>
+            </StackPanel>
+
+            <!-- Info batteria con donut -->
+            <Border x:Name="CardBattery" Style="{StaticResource SysCard}">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="STATO BATTERIA" Style="{StaticResource SysHeading3}"/>
+                    <TextBlock x:Name="TxtNoBattery"
+                        Text="Nessuna batteria rilevata su questo dispositivo."
+                        Style="{StaticResource SysBodyText}" Visibility="Collapsed"/>
+
+                    <Grid x:Name="GridBattery" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Salute — donut verde -->
+                        <StackPanel Grid.Column="0" Spacing="8" HorizontalAlignment="Center">
+                            <TextBlock Text="SALUTE" Style="{StaticResource SysHeading3}" HorizontalAlignment="Center"/>
+                            <Grid Width="110" Height="110">
+                                <lvc:PieChart
+                                    x:Name="ChartHealth"
+                                    InitialRotation="-90"
+                                    MaxAngle="360"
+                                    LegendPosition="Hidden"
+                                    TooltipPosition="Hidden"/>
+                                <TextBlock
+                                    x:Name="TxtHealth"
+                                    Text="—"
+                                    FontFamily="Consolas"
+                                    FontSize="20"
+                                    FontWeight="Bold"
+                                    Foreground="#34D399"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Carica — donut blu -->
+                        <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Center">
+                            <TextBlock Text="CARICA ATTUALE" Style="{StaticResource SysHeading3}" HorizontalAlignment="Center"/>
+                            <Grid Width="110" Height="110">
+                                <lvc:PieChart
+                                    x:Name="ChartCharge"
+                                    InitialRotation="-90"
+                                    MaxAngle="360"
+                                    LegendPosition="Hidden"
+                                    TooltipPosition="Hidden"/>
+                                <TextBlock
+                                    x:Name="TxtCharge"
+                                    Text="—"
+                                    FontFamily="Consolas"
+                                    FontSize="20"
+                                    FontWeight="Bold"
+                                    Foreground="#3B9EFF"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Info testuale -->
+                        <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="DETTAGLI" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock x:Name="TxtBattName" Text="—"
+                                Style="{StaticResource SysBodyText}" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TxtStatus" Text="—" Style="{StaticResource SysCaption}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Azioni -->
+            <Border Style="{StaticResource SysCard}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="AZIONI" Style="{StaticResource SysHeading3}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Aggiorna info" Style="{StaticResource SysButtonSecondary}" Click="BtnRefresh_Click"/>
+                        <Button Content="Genera report HTML (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnReport_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TxtResult" Text="" Style="{StaticResource SysAccentText}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

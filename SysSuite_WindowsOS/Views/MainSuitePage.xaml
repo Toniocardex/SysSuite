@@ -1,0 +1,234 @@
+<Page
+    x:Class="SysSuite.Views.MainSuitePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{StaticResource SysBGBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Grid Padding="32,24" MaxWidth="1100" HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Titolo -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,16">
+            <TextBlock Text="Ottimizzazione" Style="{StaticResource SysHeading1}"/>
+            <TextBlock Text="Pulizia, prestazioni, privacy, servizi e report di sistema."
+                Style="{StaticResource SysBodyText}"/>
+        </StackPanel>
+
+        <!-- Tab bar orizzontale -->
+        <Border Grid.Row="1" Background="#0C0F1C" CornerRadius="12" Margin="0,0,0,14" Padding="6,6">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button x:Name="BtnTab0" Content="🧹  Pulizia"
+                    Style="{StaticResource SysButtonPrimary}" Click="TabBtn_Click" Tag="0" MinWidth="120"/>
+                <Button x:Name="BtnTab1" Content="⚡  Prestazioni"
+                    Style="{StaticResource SysButtonGhost}"  Click="TabBtn_Click" Tag="1" MinWidth="120"/>
+                <Button x:Name="BtnTab2" Content="🔒  Privacy"
+                    Style="{StaticResource SysButtonGhost}"  Click="TabBtn_Click" Tag="2" MinWidth="120"/>
+                <Button x:Name="BtnTab3" Content="⚙️  Servizi"
+                    Style="{StaticResource SysButtonGhost}"  Click="TabBtn_Click" Tag="3" MinWidth="120"/>
+                <Button x:Name="BtnTab4" Content="📄  Report"
+                    Style="{StaticResource SysButtonGhost}"  Click="TabBtn_Click" Tag="4" MinWidth="120"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Contenuto tab — stessa riga, visibilità gestita dal code-behind -->
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ═══ TAB 0: PULIZIA ═══ -->
+            <StackPanel x:Name="TabPulizia" Grid.Row="0" Spacing="10" Visibility="Visible">
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="PULIZIA FILE TEMPORANEI" Style="{StaticResource SysHeading3}"/>
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Temp utente" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanTemp_Click"
+                                    ToolTipService.ToolTip="Elimina i file temporanei dell'utente (%TEMP%). Non richiede admin."/>
+                                <Button Content="Windows Temp" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanWinTemp_Click"
+                                    ToolTipService.ToolTip="Elimina C:\Windows\Temp. Richiede admin."/>
+                                <Button Content="Prefetch" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanPrefetch_Click"
+                                    ToolTipService.ToolTip="Svuota la cache di avvio rapido delle app. Richiede admin."/>
+                                <Button Content="Cestino" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanRecycle_Click"
+                                    ToolTipService.ToolTip="Svuota il cestino di Windows. Richiede admin."/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Cache miniature" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanThumb_Click"
+                                    ToolTipService.ToolTip="Elimina la cache delle anteprime immagini. Non richiede admin."/>
+                                <Button Content="Cache Windows Update" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanWU_Click"
+                                    ToolTipService.ToolTip="Ferma il servizio aggiornamenti, svuota la cache e lo riavvia. Richiede admin."/>
+                                <Button Content="PULIZIA COMPLETA" Style="{StaticResource SysButtonPrimary}" Click="BtnCleanAll_Click"
+                                    ToolTipService.ToolTip="Esegue tutte le pulizie sopra in sequenza. Chiederà conferma."/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="RIPARAZIONE SISTEMA" Style="{StaticResource SysHeading3}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="SFC /scannow" Style="{StaticResource SysButtonSecondary}" Click="BtnSFC_Click"
+                                ToolTipService.ToolTip="Verifica e ripara i file di sistema di Windows. Può richiedere diversi minuti. Richiede admin."/>
+                            <Button Content="DISM RestoreHealth" Style="{StaticResource SysButtonSecondary}" Click="BtnDISM_Click"
+                                ToolTipService.ToolTip="Ripara l'immagine di Windows usando Windows Update. Può richiedere 10-20 minuti. Richiede admin."/>
+                            <Button Content="Pianifica CHKDSK" Style="{StaticResource SysButtonSecondary}" Click="BtnCHKDSK_Click"
+                                ToolTipService.ToolTip="Programma un controllo disco al prossimo riavvio del PC. Richiede admin."/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="PULIZIA PIANIFICATA" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock x:Name="TxtScheduleStatus" Text="Stato: —"
+                            FontFamily="Consolas" FontSize="12" Foreground="#ECF0F8"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Ogni settimana" Style="{StaticResource SysButtonPrimary}" Click="BtnScheduleWeekly_Click"/>
+                            <Button Content="Ogni giorno" Style="{StaticResource SysButtonSecondary}" Click="BtnScheduleDaily_Click"/>
+                            <Button Content="Ogni mese" Style="{StaticResource SysButtonSecondary}" Click="BtnScheduleMonthly_Click"/>
+                            <Button Content="Rimuovi" Style="{StaticResource SysButtonDanger}" Click="BtnScheduleRemove_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ═══ TAB 1: PRESTAZIONI ═══ -->
+            <StackPanel x:Name="TabPrestazioni" Grid.Row="0" Spacing="10" Visibility="Collapsed">
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="PIANO ENERGETICO" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock x:Name="TxtCurrentPlan" Text="Piano corrente: —"
+                            FontFamily="Consolas" FontSize="12" Foreground="#00D4A0"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Bilanciato" Style="{StaticResource SysButtonSecondary}" Click="BtnBalanced_Click"/>
+                            <Button Content="Ultimate Performance" Style="{StaticResource SysButtonPrimary}" Click="BtnUltimate_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="ANIMAZIONI E AVVIO" Style="{StaticResource SysHeading3}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Riduci animazioni" Style="{StaticResource SysButtonSecondary}" Click="BtnAnim_Click"/>
+                            <Button Content="Ripristina animazioni" Style="{StaticResource SysButtonSecondary}" Click="BtnAnimRestore_Click"/>
+                            <Button Content="Avvio rapido ON" Style="{StaticResource SysButtonSecondary}" Click="BtnFastBoot_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="DISCO" Style="{StaticResource SysHeading3}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Ottimizza disco C:" Style="{StaticResource SysButtonSecondary}" Click="BtnDefrag_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ═══ TAB 2: PRIVACY ═══ -->
+            <StackPanel x:Name="TabPrivacy" Grid.Row="0" Spacing="10" Visibility="Collapsed">
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="TELEMETRIA E TRACCIAMENTO" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="Le modifiche a Telemetria, Cronologia e Cortana richiedono privilegi admin."
+                            Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
+                        <ToggleSwitch x:Name="TogTelemetry" Header="Telemetria Microsoft"
+                            OnContent="Attiva" OffContent="Disabilitata" Toggled="TogPrivacy_Toggled" Tag="telemetry"/>
+                        <ToggleSwitch x:Name="TogAdId" Header="ID Pubblicità"
+                            OnContent="Attivo" OffContent="Disabilitato" Toggled="TogPrivacy_Toggled" Tag="adid"/>
+                        <ToggleSwitch x:Name="TogActivity" Header="Cronologia attività"
+                            OnContent="Attiva" OffContent="Disabilitata" Toggled="TogPrivacy_Toggled" Tag="activity"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="ASSISTENTI E SUGGERIMENTI" Style="{StaticResource SysHeading3}"/>
+                        <ToggleSwitch x:Name="TogCortana" Header="Cortana"
+                            OnContent="Attiva" OffContent="Disabilitata" Toggled="TogPrivacy_Toggled" Tag="cortana"/>
+                        <ToggleSwitch x:Name="TogStartSugg" Header="Suggerimenti nel menu Start"
+                            OnContent="Attivi" OffContent="Disabilitati" Toggled="TogPrivacy_Toggled" Tag="startsugg"/>
+                        <ToggleSwitch x:Name="TogLockTips" Header="Suggerimenti schermata di blocco"
+                            OnContent="Attivi" OffContent="Disabilitati" Toggled="TogPrivacy_Toggled" Tag="locktips"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ═══ TAB 3: SERVIZI ═══ -->
+            <Grid x:Name="TabServizi" Grid.Row="0" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Style="{StaticResource SysCard}" Margin="0,0,0,10">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="SERVIZI WINDOWS" Style="{StaticResource SysHeading3}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Aggiorna stato" Style="{StaticResource SysButtonSecondary}" Click="BtnSvcRefresh_Click"/>
+                            <Button Content="Disabilita selezionato" Style="{StaticResource SysButtonDanger}" Click="BtnSvcDisable_Click"/>
+                            <Button Content="Abilita selezionato" Style="{StaticResource SysButtonSecondary}" Click="BtnSvcEnable_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Style="{StaticResource SysCard}">
+                    <ListView x:Name="LvServices" Background="Transparent" BorderThickness="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                        FontFamily="Consolas" FontSize="12" Foreground="#ECF0F8" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Status}"
+                                        FontFamily="Consolas" FontSize="11" Foreground="{Binding StatusColor}"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Description}"
+                                        FontFamily="Consolas" FontSize="11" Foreground="#3D4D66" TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Border>
+            </Grid>
+
+            <!-- ═══ TAB 4: REPORT ═══ -->
+            <StackPanel x:Name="TabReport" Grid.Row="0" Spacing="10" Visibility="Collapsed">
+                <Border Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="REPORT DI SISTEMA" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="Genera un report completo con le informazioni hardware, software e di sistema."
+                            Style="{StaticResource SysBodyText}" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Salva report TXT" Style="{StaticResource SysButtonSecondary}" Click="BtnReportTxt_Click"/>
+                            <Button Content="Salva report HTML" Style="{StaticResource SysButtonPrimary}" Click="BtnReportHtml_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Log — sempre visibile, indipendente dalla tab -->
+            <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,10,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,10">
+                        <TextBlock Text="LOG OPERAZIONI" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
+                        <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Click="BtnClearLog_Click"/>
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" x:Name="LogScroll">
+                        <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12"
+                            Foreground="#7A8BA8" TextWrapping="Wrap" Text="Pronto."/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+    </ScrollViewer>
+</Page>

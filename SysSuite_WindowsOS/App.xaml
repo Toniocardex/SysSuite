@@ -1,0 +1,321 @@
+<Application
+    x:Class="SysSuite.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ═══════════════════════════════════════════════
+                 PALETTE COLORI — SysSuite One
+                 ═══════════════════════════════════════════════ -->
+
+            <!-- Backgrounds (dal più scuro al più chiaro) -->
+            <Color x:Key="SysBGColor">#07090F</Color>
+            <Color x:Key="SysSidebarColor">#0C0F1C</Color>
+            <Color x:Key="SysPanelColor">#0F1220</Color>
+            <Color x:Key="SysCardColor">#141828</Color>
+            <Color x:Key="SysCardHoverColor">#1A2035</Color>
+            <Color x:Key="SysSurfaceColor">#1E253C</Color>
+
+            <!-- Bordi e separatori -->
+            <Color x:Key="SysBorderSubtleColor">#151C30</Color>
+            <Color x:Key="SysBorderColor">#1E2A42</Color>
+            <Color x:Key="SysBorderActiveColor">#2A3A5A</Color>
+
+            <!-- Accenti -->
+            <Color x:Key="SysAccentColor">#00D4A0</Color>
+            <Color x:Key="SysAccentDimColor">#1800D4A0</Color>
+            <Color x:Key="SysAccentGlowColor">#3000D4A0</Color>
+            <Color x:Key="SysBlueColor">#3B9EFF</Color>
+            <Color x:Key="SysBlueDimColor">#183B9EFF</Color>
+            <Color x:Key="SysAmberColor">#FFB547</Color>
+            <Color x:Key="SysAmberDimColor">#18FFB547</Color>
+            <Color x:Key="SysRedColor">#FF5A5A</Color>
+            <Color x:Key="SysRedDimColor">#18FF5A5A</Color>
+            <Color x:Key="SysGreenColor">#34D399</Color>
+            <Color x:Key="SysGreenDimColor">#1834D399</Color>
+            <Color x:Key="SysPurpleColor">#A78BFA</Color>
+            <Color x:Key="SysPurpleDimColor">#18A78BFA</Color>
+
+            <!-- Testo -->
+            <Color x:Key="SysTextPrimaryColor">#ECF0F8</Color>
+            <Color x:Key="SysTextSecondaryColor">#7A8BA8</Color>
+            <Color x:Key="SysTextMutedColor">#3D4D66</Color>
+            <Color x:Key="SysTextDisabledColor">#28334A</Color>
+
+            <!-- ── Brushes ── -->
+            <SolidColorBrush x:Key="SysAccentBrush"         Color="{StaticResource SysAccentColor}"/>
+            <SolidColorBrush x:Key="SysAccentDimBrush"      Color="{StaticResource SysAccentDimColor}"/>
+            <SolidColorBrush x:Key="SysAccentGlowBrush"     Color="{StaticResource SysAccentGlowColor}"/>
+            <SolidColorBrush x:Key="SysBlueBrush"           Color="{StaticResource SysBlueColor}"/>
+            <SolidColorBrush x:Key="SysBlueDimBrush"        Color="{StaticResource SysBlueDimColor}"/>
+            <SolidColorBrush x:Key="SysAmberBrush"          Color="{StaticResource SysAmberColor}"/>
+            <SolidColorBrush x:Key="SysAmberDimBrush"       Color="{StaticResource SysAmberDimColor}"/>
+            <SolidColorBrush x:Key="SysRedBrush"            Color="{StaticResource SysRedColor}"/>
+            <SolidColorBrush x:Key="SysRedDimBrush"         Color="{StaticResource SysRedDimColor}"/>
+            <SolidColorBrush x:Key="SysGreenBrush"          Color="{StaticResource SysGreenColor}"/>
+            <SolidColorBrush x:Key="SysGreenDimBrush"       Color="{StaticResource SysGreenDimColor}"/>
+            <SolidColorBrush x:Key="SysPurpleBrush"         Color="{StaticResource SysPurpleColor}"/>
+            <SolidColorBrush x:Key="SysPurpleDimBrush"      Color="{StaticResource SysPurpleDimColor}"/>
+            <SolidColorBrush x:Key="SysBGBrush"             Color="{StaticResource SysBGColor}"/>
+            <SolidColorBrush x:Key="SysSidebarBrush"        Color="{StaticResource SysSidebarColor}"/>
+            <SolidColorBrush x:Key="SysPanelBrush"          Color="{StaticResource SysPanelColor}"/>
+            <SolidColorBrush x:Key="SysCardBrush"           Color="{StaticResource SysCardColor}"/>
+            <SolidColorBrush x:Key="SysCardHoverBrush"      Color="{StaticResource SysCardHoverColor}"/>
+            <SolidColorBrush x:Key="SysSurfaceBrush"        Color="{StaticResource SysSurfaceColor}"/>
+            <SolidColorBrush x:Key="SysBorderSubtleBrush"   Color="{StaticResource SysBorderSubtleColor}"/>
+            <SolidColorBrush x:Key="SysBorderBrush"         Color="{StaticResource SysBorderColor}"/>
+            <SolidColorBrush x:Key="SysBorderActiveBrush"   Color="{StaticResource SysBorderActiveColor}"/>
+            <SolidColorBrush x:Key="SysTextPrimaryBrush"    Color="{StaticResource SysTextPrimaryColor}"/>
+            <SolidColorBrush x:Key="SysTextSecondaryBrush"  Color="{StaticResource SysTextSecondaryColor}"/>
+            <SolidColorBrush x:Key="SysTextMutedBrush"      Color="{StaticResource SysTextMutedColor}"/>
+            <SolidColorBrush x:Key="SysTextDisabledBrush"   Color="{StaticResource SysTextDisabledColor}"/>
+
+            <!-- ═══════════════════════════════════════════════
+                 TIPOGRAFIA
+                 ═══════════════════════════════════════════════ -->
+
+            <Style x:Key="SysDisplayText" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="28"/>
+                <Setter Property="FontWeight"   Value="Bold"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysTextPrimaryBrush}"/>
+                <Setter Property="LineHeight"   Value="36"/>
+            </Style>
+
+            <Style x:Key="SysHeading1" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="20"/>
+                <Setter Property="FontWeight"   Value="Bold"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysTextPrimaryBrush}"/>
+            </Style>
+
+            <Style x:Key="SysHeading2" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="15"/>
+                <Setter Property="FontWeight"   Value="SemiBold"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysTextPrimaryBrush}"/>
+            </Style>
+
+            <Style x:Key="SysHeading3" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="12"/>
+                <Setter Property="FontWeight"   Value="SemiBold"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysTextMutedBrush}"/>
+                <Setter Property="CharacterSpacing" Value="150"/>
+            </Style>
+
+            <Style x:Key="SysBodyText" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="13"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysTextSecondaryBrush}"/>
+                <Setter Property="LineHeight"   Value="20"/>
+            </Style>
+
+            <Style x:Key="SysCaption" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="11"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysTextMutedBrush}"/>
+            </Style>
+
+            <Style x:Key="SysAccentText" TargetType="TextBlock">
+                <Setter Property="FontFamily"   Value="Consolas"/>
+                <Setter Property="FontSize"     Value="13"/>
+                <Setter Property="FontWeight"   Value="SemiBold"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysAccentBrush}"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════
+                 PULSANTI
+                 ═══════════════════════════════════════════════ -->
+
+            <!-- Primario — sfondo accent verde -->
+            <Style x:Key="SysButtonPrimary" TargetType="Button">
+                <Setter Property="Background"       Value="{StaticResource SysAccentBrush}"/>
+                <Setter Property="Foreground"       Value="#07090F"/>
+                <Setter Property="FontFamily"       Value="Consolas"/>
+                <Setter Property="FontSize"         Value="13"/>
+                <Setter Property="FontWeight"       Value="SemiBold"/>
+                <Setter Property="Padding"          Value="20,10"/>
+                <Setter Property="CornerRadius"     Value="7"/>
+                <Setter Property="BorderThickness"  Value="0"/>
+            </Style>
+
+            <!-- Secondario — contorno accent, sfondo trasparente -->
+            <Style x:Key="SysButtonSecondary" TargetType="Button">
+                <Setter Property="Background"       Value="Transparent"/>
+                <Setter Property="BorderBrush"      Value="{StaticResource SysBorderActiveBrush}"/>
+                <Setter Property="BorderThickness"  Value="1"/>
+                <Setter Property="Foreground"       Value="{StaticResource SysTextSecondaryBrush}"/>
+                <Setter Property="FontFamily"       Value="Consolas"/>
+                <Setter Property="FontSize"         Value="13"/>
+                <Setter Property="Padding"          Value="20,10"/>
+                <Setter Property="CornerRadius"     Value="7"/>
+            </Style>
+
+            <!-- Ghost — solo testo, nessun bordo -->
+            <Style x:Key="SysButtonGhost" TargetType="Button">
+                <Setter Property="Background"       Value="Transparent"/>
+                <Setter Property="BorderThickness"  Value="0"/>
+                <Setter Property="Foreground"       Value="{StaticResource SysTextSecondaryBrush}"/>
+                <Setter Property="FontFamily"       Value="Consolas"/>
+                <Setter Property="FontSize"         Value="13"/>
+                <Setter Property="Padding"          Value="10,8"/>
+                <Setter Property="CornerRadius"     Value="6"/>
+            </Style>
+
+            <!-- Danger — azione distruttiva -->
+            <Style x:Key="SysButtonDanger" TargetType="Button">
+                <Setter Property="Background"       Value="{StaticResource SysRedDimBrush}"/>
+                <Setter Property="BorderBrush"      Value="{StaticResource SysRedBrush}"/>
+                <Setter Property="BorderThickness"  Value="1"/>
+                <Setter Property="Foreground"       Value="{StaticResource SysRedBrush}"/>
+                <Setter Property="FontFamily"       Value="Consolas"/>
+                <Setter Property="FontSize"         Value="13"/>
+                <Setter Property="FontWeight"       Value="SemiBold"/>
+                <Setter Property="Padding"          Value="20,10"/>
+                <Setter Property="CornerRadius"     Value="7"/>
+            </Style>
+
+            <!-- Icon button — solo icona, compatto -->
+            <Style x:Key="SysButtonIcon" TargetType="Button">
+                <Setter Property="Background"       Value="Transparent"/>
+                <Setter Property="BorderThickness"  Value="0"/>
+                <Setter Property="Foreground"       Value="{StaticResource SysTextMutedBrush}"/>
+                <Setter Property="Padding"          Value="8"/>
+                <Setter Property="CornerRadius"     Value="6"/>
+                <Setter Property="Width"            Value="36"/>
+                <Setter Property="Height"           Value="36"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════
+                 CARD E SUPERFICI
+                 ═══════════════════════════════════════════════ -->
+
+            <!-- Card base — contenitore generico -->
+            <Style x:Key="SysCard" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysCardBrush}"/>
+                <Setter Property="CornerRadius"      Value="10"/>
+                <Setter Property="Padding"           Value="20"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysBorderBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- Card elevata — con bordo accent -->
+            <Style x:Key="SysCardAccent" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysCardBrush}"/>
+                <Setter Property="CornerRadius"      Value="10"/>
+                <Setter Property="Padding"           Value="20"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysAccentBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- Card metrica — numero grande + label -->
+            <Style x:Key="SysCardMetric" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysSurfaceBrush}"/>
+                <Setter Property="CornerRadius"      Value="8"/>
+                <Setter Property="Padding"           Value="16,14"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysBorderBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- Badge / pill inline -->
+            <Style x:Key="SysMetricBadge" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysSurfaceBrush}"/>
+                <Setter Property="CornerRadius"      Value="20"/>
+                <Setter Property="Padding"           Value="12,5"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysBorderBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- Badge accent — highlight colorato -->
+            <Style x:Key="SysBadgeAccent" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysAccentDimBrush}"/>
+                <Setter Property="CornerRadius"      Value="20"/>
+                <Setter Property="Padding"           Value="10,4"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysAccentBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- Badge warning -->
+            <Style x:Key="SysBadgeWarning" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysAmberDimBrush}"/>
+                <Setter Property="CornerRadius"      Value="20"/>
+                <Setter Property="Padding"           Value="10,4"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysAmberBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- Badge danger -->
+            <Style x:Key="SysBadgeDanger" TargetType="Border">
+                <Setter Property="Background"        Value="{StaticResource SysRedDimBrush}"/>
+                <Setter Property="CornerRadius"      Value="20"/>
+                <Setter Property="Padding"           Value="10,4"/>
+                <Setter Property="BorderBrush"       Value="{StaticResource SysRedBrush}"/>
+                <Setter Property="BorderThickness"   Value="1"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════
+                 LAYOUT HELPERS
+                 ═══════════════════════════════════════════════ -->
+
+            <!-- Separatore orizzontale sottile -->
+            <Style x:Key="SysDivider" TargetType="Border">
+                <Setter Property="Background"           Value="{StaticResource SysBorderSubtleBrush}"/>
+                <Setter Property="Height"               Value="1"/>
+                <Setter Property="HorizontalAlignment"  Value="Stretch"/>
+                <Setter Property="Margin"               Value="0,4"/>
+            </Style>
+
+            <!-- Separatore con indent per sidebar -->
+            <Style x:Key="SysNavDivider" TargetType="Border">
+                <Setter Property="Background"           Value="{StaticResource SysBorderSubtleBrush}"/>
+                <Setter Property="Height"               Value="1"/>
+                <Setter Property="HorizontalAlignment"  Value="Stretch"/>
+                <Setter Property="Margin"               Value="16,8"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════
+                 INPUT FIELDS
+                 ═══════════════════════════════════════════════ -->
+
+            <Style x:Key="SysTextBox" TargetType="TextBox">
+                <Setter Property="Background"       Value="{StaticResource SysSurfaceBrush}"/>
+                <Setter Property="BorderBrush"      Value="{StaticResource SysBorderBrush}"/>
+                <Setter Property="BorderThickness"  Value="1"/>
+                <Setter Property="Foreground"       Value="{StaticResource SysTextPrimaryBrush}"/>
+                <Setter Property="FontFamily"       Value="Consolas"/>
+                <Setter Property="FontSize"         Value="13"/>
+                <Setter Property="Padding"          Value="12,9"/>
+                <Setter Property="CornerRadius"     Value="7"/>
+            </Style>
+
+            <Style x:Key="SysComboBox" TargetType="ComboBox">
+                <Setter Property="Background"       Value="{StaticResource SysSurfaceBrush}"/>
+                <Setter Property="BorderBrush"      Value="{StaticResource SysBorderBrush}"/>
+                <Setter Property="BorderThickness"  Value="1"/>
+                <Setter Property="Foreground"       Value="{StaticResource SysTextPrimaryBrush}"/>
+                <Setter Property="FontFamily"       Value="Consolas"/>
+                <Setter Property="FontSize"         Value="13"/>
+                <Setter Property="Padding"          Value="12,9"/>
+                <Setter Property="CornerRadius"     Value="7"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════
+                 PROGRESS BAR
+                 ═══════════════════════════════════════════════ -->
+
+            <Style x:Key="SysProgressBar" TargetType="ProgressBar">
+                <Setter Property="Background"   Value="{StaticResource SysSurfaceBrush}"/>
+                <Setter Property="Foreground"   Value="{StaticResource SysAccentBrush}"/>
+                <Setter Property="Height"       Value="4"/>
+                <Setter Property="CornerRadius" Value="2"/>
+            </Style>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,53 @@
+<Page
+    x:Class="SysSuite.Views.DiscoPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{StaticResource SysBGBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Grid Padding="32,24" MaxWidth="1100" HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,20">
+            <TextBlock Text="Analisi Disco" Style="{StaticResource SysHeading1}"/>
+            <TextBlock Text="Cartelle pesanti, file grandi e dati S.M.A.R.T." Style="{StaticResource SysBodyText}"/>
+        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
+            <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="Cartelle pesanti (C:)" Style="{StaticResource SysButtonSecondary}" Click="BtnFolders_Click"/>
+                    <Button Content="File grandi >100MB" Style="{StaticResource SysButtonSecondary}" Click="BtnLargeFiles_Click"/>
+                    <Button Content="Dati S.M.A.R.T." Style="{StaticResource SysButtonSecondary}" Click="BtnSmart_Click"/>
+                    <Button Content="Trova duplicati" Style="{StaticResource SysButtonSecondary}" Click="BtnDuplicates_Click"/>
+                    <ProgressBar x:Name="PbScan" Style="{StaticResource SysProgressBar}" Width="160" VerticalAlignment="Center" IsIndeterminate="False"/>
+                    <TextBlock x:Name="TxtStatus" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        <Border Grid.Row="2" Style="{StaticResource SysCard}">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <TextBlock x:Name="TxtScanType" Grid.Row="0"
+                    Text="Seleziona una scansione per iniziare."
+                    Style="{StaticResource SysHeading3}" Margin="0,0,0,10"/>
+                <ListView x:Name="LvItems" Grid.Row="1" Background="Transparent" BorderThickness="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Size}" FontFamily="Consolas" FontSize="12" Foreground="#FFB547" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Path}" FontFamily="Consolas" FontSize="12" Foreground="#ECF0F8" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+    </Grid>
+    </ScrollViewer>
+</Page>

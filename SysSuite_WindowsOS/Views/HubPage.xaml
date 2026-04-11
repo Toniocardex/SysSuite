@@ -1,0 +1,336 @@
+<Page
+    x:Class="SysSuite.Views.HubPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.WinUI"
+    Background="{StaticResource SysBGBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Padding="32,24" Spacing="20" MaxWidth="1100" HorizontalAlignment="Center">
+
+            <!-- Titolo -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Dashboard" Style="{StaticResource SysHeading1}"/>
+                <TextBlock x:Name="TxtSub" Text="Caricamento informazioni sistema..."
+                    Style="{StaticResource SysBodyText}"/>
+            </StackPanel>
+
+            <!-- Riga 1: CPU · RAM · Disco -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- CPU -->
+                <Border Grid.Column="0" Style="{StaticResource SysCard}" Margin="0,0,10,0">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="PROCESSORE" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock x:Name="TxtCPUName" Text="—" FontFamily="Consolas"
+                            FontSize="12" Foreground="#00D4A0" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="TxtCPUCores" Text="—" Style="{StaticResource SysCaption}"/>
+                        <TextBlock x:Name="TxtCPUFreq"  Text="—" Style="{StaticResource SysCaption}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- RAM — Donut -->
+                <Border Grid.Column="1" Style="{StaticResource SysCard}" Margin="0,0,10,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <lvc:PieChart x:Name="ChartRAM" Grid.Column="0"
+                            Width="80" Height="80" InitialRotation="-90" MaxAngle="360"
+                            LegendPosition="Hidden" TooltipPosition="Hidden"/>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="MEMORIA RAM" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock x:Name="TxtRAMUsed" Text="—"
+                                FontFamily="Consolas" FontSize="22" FontWeight="Bold" Foreground="#3B9EFF"/>
+                            <TextBlock x:Name="TxtRAMDetail" Text="—" Style="{StaticResource SysCaption}"/>
+                            <TextBlock x:Name="TxtRAMCommercial" Text="—"
+                                FontFamily="Consolas" FontSize="11" Foreground="#3B9EFF"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Disco — Donut -->
+                <Border Grid.Column="2" Style="{StaticResource SysCard}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <lvc:PieChart x:Name="ChartDisk" Grid.Column="0"
+                            Width="80" Height="80" InitialRotation="-90" MaxAngle="360"
+                            LegendPosition="Hidden" TooltipPosition="Hidden"/>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="DISCO SISTEMA" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock x:Name="TxtDiskFree" Text="—"
+                                FontFamily="Consolas" FontSize="22" FontWeight="Bold" Foreground="#FFB547"/>
+                            <TextBlock x:Name="TxtDiskTotal" Text="—" Style="{StaticResource SysCaption}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Riga 2: Sistema · GPU -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Sistema OS -->
+                <Border Grid.Column="0" Style="{StaticResource SysCard}" Margin="0,0,10,0">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="SISTEMA" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock x:Name="TxtOS" Text="—" FontFamily="Consolas"
+                            FontSize="13" FontWeight="SemiBold" Foreground="#ECF0F8" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="TxtOSVersion" Text="—" Style="{StaticResource SysCaption}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,4,0,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="UPTIME" Style="{StaticResource SysHeading3}"/>
+                                <TextBlock x:Name="TxtUptime" Text="—" Style="{StaticResource SysCaption}"/>
+                            </StackPanel>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="IP LOCALE" Style="{StaticResource SysHeading3}"/>
+                                <TextBlock x:Name="TxtIP" Text="—"
+                                    FontFamily="Consolas" FontSize="11" Foreground="#00D4A0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- GPU -->
+                <Border Grid.Column="1" Style="{StaticResource SysCard}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="SCHEDA VIDEO" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock x:Name="TxtGPUName" Text="—" FontFamily="Consolas"
+                            FontSize="12" Foreground="#A78BFA" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="TxtGPUVRAM" Text="—" Style="{StaticResource SysCaption}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Azioni rapide: Boost + RAM Optimizer affiancati -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- One-Click Boost -->
+                <Border Grid.Column="0" Style="{StaticResource SysCardAccent}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="&#xE945;" FontFamily="Segoe Fluent Icons"
+                                    FontSize="18" Foreground="#00D4A0" VerticalAlignment="Center"/>
+                                <TextBlock Text="One-Click Boost" Style="{StaticResource SysHeading2}"/>
+                            </StackPanel>
+                            <TextBlock Text="Temp, miniature, cache browser, processi bloccati."
+                                Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                <ProgressBar x:Name="PbBoost" Style="{StaticResource SysProgressBar}"
+                                    Width="160" IsIndeterminate="False" Visibility="Collapsed"/>
+                                <TextBlock x:Name="TxtBoostResult" Text=""
+                                    Style="{StaticResource SysAccentText}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="BtnBoost" Content="BOOST"
+                            Style="{StaticResource SysButtonPrimary}" FontSize="14"
+                            Padding="22,12" Click="BtnBoost_Click" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- RAM Optimizer -->
+                <Border Grid.Column="2" Style="{StaticResource SysCard}"
+                    BorderBrush="#3B9EFF" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="&#xE9F9;" FontFamily="Segoe Fluent Icons"
+                                    FontSize="18" Foreground="#3B9EFF" VerticalAlignment="Center"/>
+                                <TextBlock Text="RAM Optimizer" Style="{StaticResource SysHeading2}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="TxtRamStatus" Text="Caricamento..."
+                                Style="{StaticResource SysCaption}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                <ProgressBar x:Name="PbRamOpt" Style="{StaticResource SysProgressBar}"
+                                    Width="160" IsIndeterminate="True" Visibility="Collapsed"/>
+                                <TextBlock x:Name="TxtRamResult" Text=""
+                                    FontFamily="Consolas" FontSize="11" Foreground="#3B9EFF"
+                                    VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="BtnRamOpt" Content="OTTIMIZZA"
+                            Style="{StaticResource SysButtonSecondary}" FontSize="12"
+                            Padding="16,12" Click="BtnRamOpt_Click" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Moduli cliccabili — ogni card naviga al modulo corrispondente -->
+            <TextBlock Text="MODULI DISPONIBILI" Style="{StaticResource SysHeading3}" Margin="0,8,0,0"/>
+
+            <!-- Riga 1: 5 moduli -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Tag="MainSuite" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE945;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#00D4A0"/>
+                            <TextBlock Text="Ottimizzazione" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="Pulizia, SFC, privacy" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="1" Tag="Monitor" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE9F9;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#3B9EFF"/>
+                            <TextBlock Text="Monitor Live" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="CPU e RAM in tempo reale" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="2" Tag="Disco" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xEDA2;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#FFB547"/>
+                            <TextBlock Text="Analisi Disco" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="File grandi e duplicati" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="3" Tag="Gaming" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE7FC;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#A78BFA"/>
+                            <TextBlock Text="Gaming Mode" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="FPS e latenza ottimizzati" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="4" Tag="AppManager" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,0,10"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE74C;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#34D399"/>
+                            <TextBlock Text="Processi e App" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="Avvio automatico e gestione" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+            </Grid>
+
+            <!-- Riga 2: 5 moduli -->
+            <Grid Margin="0,-10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Tag="Network" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE968;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#00D4A0"/>
+                            <TextBlock Text="Scanner Rete" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="DNS, TCP/IP, porte aperte" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="1" Tag="Driver" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8B8;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#FFB547"/>
+                            <TextBlock Text="Driver" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="Lista e backup con DISM" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="2" Tag="Battery" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE83F;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#34D399"/>
+                            <TextBlock Text="Batteria" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="Salute, cicli e report" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="3" Tag="Browser" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8BB;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#FF5A5A"/>
+                            <TextBlock Text="Pulizia Browser" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="Chrome, Edge, Firefox, Brave" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="4" Tag="Registry" Click="ModuleCard_Click"
+                    Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,0,0"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
+                        <StackPanel Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#A78BFA"/>
+                            <TextBlock Text="Registro" Style="{StaticResource SysHeading2}"/>
+                            <TextBlock Text="Chiavi orfane e backup" Style="{StaticResource SysCaption}"
+                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

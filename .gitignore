@@ -1,0 +1,39 @@
+## Build / .NET
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+
+## Visual Studio / VS Code
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+## Code signing (non committare certificati)
+*.pfx
+*.snk
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Publish / package output
+**/publish/
+**/AppPackages/
+**/BundleArtifacts/
+
+## Misc
+*.log
+*.tmp
+*.temp

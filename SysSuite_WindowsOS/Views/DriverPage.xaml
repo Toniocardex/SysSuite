@@ -1,0 +1,51 @@
+<Page
+    x:Class="SysSuite.Views.DriverPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{StaticResource SysBGBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Grid Padding="32,24" MaxWidth="1100" HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,20">
+            <TextBlock Text="Driver" Style="{StaticResource SysHeading1}"/>
+            <TextBlock Text="Visualizza driver installati, problematici e crea un backup con DISM." Style="{StaticResource SysBodyText}"/>
+        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Carica tutti i driver" Style="{StaticResource SysButtonSecondary}" Click="BtnLoad_Click"/>
+                <Button Content="Mostra solo problematici" Style="{StaticResource SysButtonSecondary}" Click="BtnProblematic_Click"/>
+                <Button Content="Backup driver (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnBackup_Click"/>
+                <TextBlock x:Name="TxtCount" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+        <Border Grid.Row="2" Style="{StaticResource SysCard}">
+            <ListView x:Name="LvDrivers" Background="Transparent" BorderThickness="0">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontFamily="Consolas" FontSize="12" Foreground="#ECF0F8" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Manufacturer}" FontFamily="Consolas" FontSize="11" Foreground="#7A8BA8" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="2" Text="{Binding Version}" FontFamily="Consolas" FontSize="10" Foreground="#3D4D66"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Date}" FontFamily="Consolas" FontSize="10" Foreground="#3D4D66"/>
+                            <TextBlock Grid.Column="4" Text="{Binding DeviceClass}" FontFamily="Consolas" FontSize="11" Foreground="#3D4D66"/>
+                            <TextBlock Grid.Column="5" Text="{Binding Status}" FontFamily="Consolas" FontSize="11" Foreground="{Binding StatusColor}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+    </Grid>
+    </ScrollViewer>
+</Page>
