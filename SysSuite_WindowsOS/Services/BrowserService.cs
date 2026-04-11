@@ -1,36 +1,42 @@
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace SysSuite.Services
 {
     /// <summary>Rileva browser installati e pulisce cache, cookie, cronologia.</summary>
     public class BrowserService
     {
-        public event Action<string,string>? Log;
+        public event Action<string, string>? Log;
 
         public record BrowserInfo(string Name, bool Installed, string CachePath, string DataPath);
 
         public List<BrowserInfo> DetectBrowsers()
         {
-            string local  = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string roaming= Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
             return new List<BrowserInfo>
             {
-                new("Chrome",   Dir(local,  @"Google\Chrome\User Data\Default\Cache"),
-                    Path.Combine(local,  @"Google\Chrome\User Data\Default\Cache"),
-                    Path.Combine(local,  @"Google\Chrome\User Data\Default")),
-                new("Edge",     Dir(local,  @"Microsoft\Edge\User Data\Default\Cache"),
-                    Path.Combine(local,  @"Microsoft\Edge\User Data\Default\Cache"),
-                    Path.Combine(local,  @"Microsoft\Edge\User Data\Default")),
-                new("Firefox",  Dir(roaming,@"Mozilla\Firefox\Profiles"),
+                new("Chrome", Dir(local, @"Google\Chrome\User Data\Default\Cache"),
+                    Path.Combine(local, @"Google\Chrome\User Data\Default\Cache"),
+                    Path.Combine(local, @"Google\Chrome\User Data\Default")),
+                new("Edge", Dir(local, @"Microsoft\Edge\User Data\Default\Cache"),
+                    Path.Combine(local, @"Microsoft\Edge\User Data\Default\Cache"),
+                    Path.Combine(local, @"Microsoft\Edge\User Data\Default")),
+                new("Firefox", Dir(roaming, @"Mozilla\Firefox\Profiles"),
                     FindFirefoxCache(roaming),
                     Path.Combine(roaming, @"Mozilla\Firefox\Profiles")),
-                new("Brave",    Dir(local,  @"BraveSoftware\Brave-Browser\User Data\Default\Cache"),
-                    Path.Combine(local,  @"BraveSoftware\Brave-Browser\User Data\Default\Cache"),
-                    Path.Combine(local,  @"BraveSoftware\Brave-Browser\User Data\Default")),
-                new("Opera",    Dir(roaming,@"Opera Software\Opera Stable\Cache"),
-                    Path.Combine(roaming,@"Opera Software\Opera Stable\Cache"),
-                    Path.Combine(roaming,@"Opera Software\Opera Stable")),
+                new("Brave", Dir(local, @"BraveSoftware\Brave-Browser\User Data\Default\Cache"),
+                    Path.Combine(local, @"BraveSoftware\Brave-Browser\User Data\Default\Cache"),
+                    Path.Combine(local, @"BraveSoftware\Brave-Browser\User Data\Default")),
+                new("Opera", Dir(roaming, @"Opera Software\Opera Stable\Cache"),
+                    Path.Combine(roaming, @"Opera Software\Opera Stable\Cache"),
+                    Path.Combine(roaming, @"Opera Software\Opera Stable")),
             };
         }
+
+        public Task<List<BrowserInfo>> DetectBrowsersAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(DetectBrowsers, cancellationToken);
 
         public void CleanCache(BrowserInfo browser)
         {
@@ -38,10 +44,12 @@ namespace SysSuite.Services
             DeleteFolder(browser.CachePath, $"cache {browser.Name}");
         }
 
+        public Task CleanCacheAsync(BrowserInfo browser, CancellationToken cancellationToken = default) =>
+            Task.Run(() => CleanCache(browser), cancellationToken);
+
         public void CleanAll(BrowserInfo browser)
         {
             CleanCache(browser);
-            // Cookie e sessioni (solo subcartelle sicure)
             foreach (var sub in new[] { "Code Cache", "GPUCache", "ShaderCache" })
             {
                 string path = Path.Combine(browser.DataPath, sub);
@@ -49,12 +57,18 @@ namespace SysSuite.Services
             }
         }
 
+        public Task CleanAllAsync(BrowserInfo browser, CancellationToken cancellationToken = default) =>
+            Task.Run(() => CleanAll(browser), cancellationToken);
+
         public long GetCacheSize(BrowserInfo browser)
         {
             if (!browser.Installed || !Directory.Exists(browser.CachePath)) return 0;
             return Directory.GetFiles(browser.CachePath, "*", SearchOption.AllDirectories)
                 .Sum(f => { try { return new FileInfo(f).Length; } catch { return 0L; } });
         }
+
+        public Task<long> GetCacheSizeAsync(BrowserInfo browser, CancellationToken cancellationToken = default) =>
+            Task.Run(() => GetCacheSize(browser), cancellationToken);
 
         private void DeleteFolder(string path, string label)
         {

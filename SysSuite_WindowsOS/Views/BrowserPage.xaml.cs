@@ -11,44 +11,92 @@ namespace SysSuite.Views
         private readonly BrowserService _svc = new();
         private List<BrowserService.BrowserInfo> _browsers = new();
 
-        public BrowserPage() { InitializeComponent(); _svc.Log += AppendLog; Loaded += (_, _) => Detect(); }
+        public BrowserPage()
+        {
+            InitializeComponent();
+            _svc.Log += AppendLog;
+            Loaded += (_, _) => { _ = DetectAsync(); };
+        }
 
-        private void BtnDetect_Click(object s, RoutedEventArgs e) => Detect();
+        private void SetBrowserWorkBusy(bool busy)
+        {
+            RingBrowserBusy.IsActive = busy;
+            RingBrowserBusy.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            BtnDetectBrowsers.IsEnabled = !busy;
+            BtnCleanCache.IsEnabled = !busy;
+            BtnCleanDeep.IsEnabled = !busy;
+            LvBrowsers.IsEnabled = !busy;
+        }
+
+        private async Task DetectAsync()
+        {
+            SetBrowserWorkBusy(true);
+            try
+            {
+                _browsers = await _svc.DetectBrowsersAsync().ConfigureAwait(true);
+                var rows = new List<object>();
+                foreach (var b in _browsers)
+                {
+                    long bytes = b.Installed ? await _svc.GetCacheSizeAsync(b).ConfigureAwait(true) : 0;
+                    string sizeStr = bytes == 0 ? "—"
+                        : bytes >= 1_048_576 ? (bytes / 1_048_576) + " MB"
+                        : (bytes / 1_024) + " KB";
+                    rows.Add(new
+                    {
+                        b.Name,
+                        b.CachePath,
+                        CacheSize = sizeStr,
+                        InstalledText = b.Installed ? "RILEVATO" : "non trovato",
+                        InstalledColor = b.Installed
+                            ? new SolidColorBrush(Color.FromArgb(255, 52, 211, 153))
+                            : new SolidColorBrush(Color.FromArgb(255, 61, 77, 102))
+                    });
+                }
+
+                LvBrowsers.ItemsSource = rows;
+                AppendLog(_browsers.Count(b => b.Installed) + " browser rilevati.", "ok");
+            }
+            catch (Exception ex) { AppendLog("Rilevamento: " + ex.Message, "err"); }
+            finally { SetBrowserWorkBusy(false); }
+        }
+
+        private async void BtnDetect_Click(object s, RoutedEventArgs e)
+        {
+            await DetectAsync();
+        }
+
         private void BtnClear_Click(object s, RoutedEventArgs e) => TxtLog.Text = "";
 
-        private void Detect()
+        private async void BtnCleanDeep_Click(object s, RoutedEventArgs e)
         {
-            _browsers = _svc.DetectBrowsers();
-            LvBrowsers.ItemsSource = _browsers.Select(b =>
+            SetBrowserWorkBusy(true);
+            try
             {
-                long bytes = b.Installed ? _svc.GetCacheSize(b) : 0;
-                string sizeStr = bytes == 0 ? "—"
-                    : bytes >= 1_048_576 ? (bytes / 1_048_576) + " MB"
-                    : (bytes / 1_024) + " KB";
-                return new
+                foreach (var b in _browsers.Where(b => b.Installed))
                 {
-                    b.Name, b.CachePath,
-                    CacheSize     = sizeStr,
-                    InstalledText = b.Installed ? "RILEVATO" : "non trovato",
-                    InstalledColor = b.Installed
-                        ? new SolidColorBrush(Color.FromArgb(255,52,211,153))
-                        : new SolidColorBrush(Color.FromArgb(255,61,77,102))
-                };
-            }).ToList();
-            AppendLog(_browsers.Count(b => b.Installed) + " browser rilevati.", "ok");
+                    try { await _svc.CleanAllAsync(b).ConfigureAwait(true); }
+                    catch (Exception ex) { AppendLog(b.Name + ": " + ex.Message, "err"); }
+                }
+
+                await DetectAsync();
+            }
+            finally { SetBrowserWorkBusy(false); }
         }
 
-        private void BtnCleanDeep_Click(object s, RoutedEventArgs e)
+        private async void BtnCleanAll_Click(object s, RoutedEventArgs e)
         {
-            foreach (var b in _browsers.Where(b => b.Installed))
-                try { _svc.CleanAll(b); } catch (Exception ex) { AppendLog(b.Name + ": " + ex.Message, "err"); }
-            Detect();
-        }
+            SetBrowserWorkBusy(true);
+            try
+            {
+                foreach (var b in _browsers.Where(b => b.Installed))
+                {
+                    try { await _svc.CleanCacheAsync(b).ConfigureAwait(true); }
+                    catch (Exception ex) { AppendLog($"{b.Name}: {ex.Message}", "err"); }
+                }
 
-        private void BtnCleanAll_Click(object s, RoutedEventArgs e)
-        {
-            foreach (var b in _browsers.Where(b => b.Installed))
-                try { _svc.CleanCache(b); } catch (Exception ex) { AppendLog($"{b.Name}: {ex.Message}", "err"); }
+                await DetectAsync();
+            }
+            finally { SetBrowserWorkBusy(false); }
         }
 
         private void AppendLog(string msg, string type) =>

@@ -5,6 +5,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SkiaSharp;
+using SysSuite.Models;
 using SysSuite.Services;
 
 namespace SysSuite.Views
@@ -17,48 +18,75 @@ namespace SysSuite.Views
         public BatteryPage()
         {
             InitializeComponent();
-            Loaded += (_, _) =>
+            Loaded += async (_, _) =>
             {
-                Refresh();
+                await RefreshDataAsync(showBusy: true);
                 _timer = DispatcherQueue.CreateTimer();
                 _timer.Interval = TimeSpan.FromSeconds(30);
-                _timer.Tick += (_, _) => Refresh();
+                _timer.Tick += async (_, _) =>
+                {
+                    try { await RefreshDataAsync(showBusy: false); }
+                    catch { /* timer: non disturbare l'utente */ }
+                };
                 _timer.Start();
             };
             Unloaded += (_, _) => _timer?.Stop();
         }
 
-        private void BtnRefresh_Click(object s, RoutedEventArgs e) => Refresh();
-
-        private void Refresh()
+        private void SetBatteryActionsBusy(bool busy)
         {
-            var info = _svc.GetBatteryInfo();
+            RingBatteryBusy.IsActive = busy;
+            RingBatteryBusy.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            BtnRefreshBattery.IsEnabled = !busy;
+            BtnBatteryReport.IsEnabled = !busy;
+        }
+
+        private async Task RefreshDataAsync(bool showBusy)
+        {
+            if (showBusy)
+                SetBatteryActionsBusy(true);
+            try
+            {
+                var info = await _svc.GetBatteryInfoAsync().ConfigureAwait(true);
+                ApplyBatteryUi(info);
+            }
+            catch (Exception ex)
+            {
+                TxtResult.Text = "Errore: " + ex.Message;
+            }
+            finally
+            {
+                if (showBusy)
+                    SetBatteryActionsBusy(false);
+            }
+        }
+
+        private void ApplyBatteryUi(BatteryInfo? info)
+        {
             if (info == null)
             {
                 TxtNoBattery.Visibility = Visibility.Visible;
-                GridBattery.Visibility  = Visibility.Collapsed;
+                GridBattery.Visibility = Visibility.Collapsed;
                 return;
             }
 
             TxtNoBattery.Visibility = Visibility.Collapsed;
-            GridBattery.Visibility  = Visibility.Visible;
+            GridBattery.Visibility = Visibility.Visible;
 
-            // Donut Salute
             TxtHealth.Text = info.HealthPercent + "%";
             UpdateDonut(ChartHealth,
                 info.HealthPercent,
-                new SKColor(52, 211, 153),   // #34D399 verde
+                new SKColor(52, 211, 153),
                 new SKColor(20, 24, 40));
 
-            // Donut Carica
             TxtCharge.Text = info.ChargePercent + "%";
             UpdateDonut(ChartCharge,
                 info.ChargePercent,
-                new SKColor(59, 158, 255),   // #3B9EFF blu
+                new SKColor(59, 158, 255),
                 new SKColor(20, 24, 40));
 
             TxtBattName.Text = info.Name;
-            TxtStatus.Text   = "Stato: " + info.Status;
+            TxtStatus.Text = "Stato: " + info.Status;
         }
 
         private static void UpdateDonut(
@@ -94,10 +122,28 @@ namespace SysSuite.Views
             };
         }
 
-        private void BtnReport_Click(object s, RoutedEventArgs e)
+        private async void BtnRefresh_Click(object s, RoutedEventArgs e)
         {
-            try   { var path = _svc.GenerateReport(); TxtResult.Text = "Report salvato: " + path; }
+            SetBatteryActionsBusy(true);
+            try
+            {
+                var info = await _svc.GetBatteryInfoAsync().ConfigureAwait(true);
+                ApplyBatteryUi(info);
+            }
             catch (Exception ex) { TxtResult.Text = "Errore: " + ex.Message; }
+            finally { SetBatteryActionsBusy(false); }
+        }
+
+        private async void BtnReport_Click(object s, RoutedEventArgs e)
+        {
+            SetBatteryActionsBusy(true);
+            try
+            {
+                string path = await _svc.GenerateReportAsync().ConfigureAwait(true);
+                TxtResult.Text = "Report salvato: " + path;
+            }
+            catch (Exception ex) { TxtResult.Text = "Errore: " + ex.Message; }
+            finally { SetBatteryActionsBusy(false); }
         }
     }
 }

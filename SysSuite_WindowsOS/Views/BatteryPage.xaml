@@ -26,7 +26,6 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Salute — donut verde -->
                         <StackPanel Grid.Column="0" Spacing="8" HorizontalAlignment="Center">
                             <TextBlock Text="SALUTE" Style="{StaticResource SysHeading3}" HorizontalAlignment="Center"/>
                             <Grid Width="110" Height="110">
@@ -48,7 +47,6 @@
                             </Grid>
                         </StackPanel>
 
-                        <!-- Carica — donut blu -->
                         <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Center">
                             <TextBlock Text="CARICA ATTUALE" Style="{StaticResource SysHeading3}" HorizontalAlignment="Center"/>
                             <Grid Width="110" Height="110">
@@ -70,7 +68,6 @@
                             </Grid>
                         </StackPanel>
 
-                        <!-- Info testuale -->
                         <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="DETTAGLI" Style="{StaticResource SysHeading3}"/>
                             <TextBlock x:Name="TxtBattName" Text="—"
@@ -86,8 +83,10 @@
                 <StackPanel Spacing="12">
                     <TextBlock Text="AZIONI" Style="{StaticResource SysHeading3}"/>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="Aggiorna info" Style="{StaticResource SysButtonSecondary}" Click="BtnRefresh_Click"/>
-                        <Button Content="Genera report HTML (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnReport_Click"/>
+                        <Button x:Name="BtnRefreshBattery" Content="Aggiorna info" Style="{StaticResource SysButtonSecondary}" Click="BtnRefresh_Click"/>
+                        <Button x:Name="BtnBatteryReport" Content="Genera report HTML (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnReport_Click"/>
+                        <ProgressRing x:Name="RingBatteryBusy" Width="22" Height="22" VerticalAlignment="Center"
+                            IsActive="False" Visibility="Collapsed"/>
                     </StackPanel>
                     <TextBlock x:Name="TxtResult" Text="" Style="{StaticResource SysAccentText}" TextWrapping="Wrap"/>
                 </StackPanel>

@@ -1,4 +1,7 @@
 using System.Management;
+using System.Threading;
+using System.Threading.Tasks;
+using SysSuite.Core;
 using SysSuite.Models;
 
 namespace SysSuite.Services
@@ -6,7 +9,7 @@ namespace SysSuite.Services
     /// <summary>Salute batteria, cicli, report powercfg.</summary>
     public class BatteryService
     {
-        public event Action<string,string>? Log;
+        public event Action<string, string>? Log;
 
         public BatteryInfo? GetBatteryInfo()
         {
@@ -22,7 +25,7 @@ namespace SysSuite.Services
                         FullCapacity   = Convert.ToInt32(o["FullChargeCapacity"] ?? 0),
                         CurrentCharge  = Convert.ToInt32(o["EstimatedChargeRemaining"] ?? 0),
                         Status         = TranslateBatteryStatus(o["BatteryStatus"]?.ToString() ?? ""),
-                        CycleCount     = 0  // Non disponibile via WMI standard
+                        CycleCount     = 0
                     };
                 }
             }
@@ -30,21 +33,28 @@ namespace SysSuite.Services
             return null;
         }
 
-        public string GenerateReport()
+        /// <summary>Interrogazione WMI su thread pool (non blocca la UI).</summary>
+        public Task<BatteryInfo?> GetBatteryInfoAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(GetBatteryInfo, cancellationToken);
+
+        /// <summary>Genera il report HTML con powercfg (cattura output, verifica codice di uscita).</summary>
+        public async Task<string> GenerateReportAsync(CancellationToken cancellationToken = default)
         {
             string path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                 "SysSuite_BatteryReport.html");
-            var p = new System.Diagnostics.Process
+            string args = $"/batteryreport /output \"{path}\"";
+            var (exit, output) = await ProcessRunner.RunCaptureAsync("powercfg.exe", args, cancellationToken)
+                .ConfigureAwait(false);
+            if (exit != 0)
             {
-                StartInfo = new("powercfg.exe", $"/batteryreport /output \"{path}\"")
-                    { CreateNoWindow = true, UseShellExecute = false }
-            };
-            p.Start(); p.WaitForExit();
+                string detail = string.IsNullOrWhiteSpace(output) ? "(nessun output)" : output.Trim();
+                throw new InvalidOperationException($"powercfg terminato con codice {exit}. {detail}");
+            }
+
             Log?.Invoke($"Report batteria: {path}", "ok");
             return path;
         }
-
 
         private static string TranslateBatteryStatus(string raw)
         {
@@ -64,6 +74,7 @@ namespace SysSuite.Services
                 _    => raw.Length > 0 ? raw : "Sconosciuto"
             };
         }
+
         public bool HasBattery()
         {
             try
@@ -73,5 +84,8 @@ namespace SysSuite.Services
             }
             catch { return false; }
         }
+
+        public Task<bool> HasBatteryAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(HasBattery, cancellationToken);
     }
 }

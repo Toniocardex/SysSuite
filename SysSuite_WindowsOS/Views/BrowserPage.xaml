@@ -18,9 +18,11 @@
             <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <TextBlock Text="BROWSER RILEVATI" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <Button Content="Rileva browser" Style="{StaticResource SysButtonSecondary}" Click="BtnDetect_Click"/>
-                    <Button Content="Pulisci cache" Style="{StaticResource SysButtonPrimary}" Click="BtnCleanAll_Click"/>
-                    <Button Content="Pulisci tutto (cache+shader)" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanDeep_Click"/>
+                    <Button x:Name="BtnDetectBrowsers" Content="Rileva browser" Style="{StaticResource SysButtonSecondary}" Click="BtnDetect_Click"/>
+                    <Button x:Name="BtnCleanCache" Content="Pulisci cache" Style="{StaticResource SysButtonPrimary}" Click="BtnCleanAll_Click"/>
+                    <Button x:Name="BtnCleanDeep" Content="Pulisci tutto (cache+shader)" Style="{StaticResource SysButtonSecondary}" Click="BtnCleanDeep_Click"/>
+                    <ProgressRing x:Name="RingBrowserBusy" Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="False" Visibility="Collapsed"/>
                 </StackPanel>
                 <ListView x:Name="LvBrowsers" MaxHeight="200" Background="Transparent" BorderThickness="0">
                     <ListView.ItemTemplate>
@@ -47,7 +49,7 @@
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
                     <TextBlock Text="LOG" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Click="BtnClear_Click"/>
+                    <Button x:Name="BtnClearBrowserLog" Content="Pulisci" Style="{StaticResource SysButtonGhost}" Click="BtnClear_Click"/>
                 </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8" TextWrapping="Wrap"
