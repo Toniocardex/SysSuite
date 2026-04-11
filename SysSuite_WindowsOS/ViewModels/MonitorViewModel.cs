@@ -4,6 +4,7 @@ using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
+using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using Microsoft.UI.Dispatching;
@@ -18,8 +19,8 @@ namespace SysSuite.ViewModels
 {
     /// <summary>
     /// Monitor live: campionamento CPU/RAM, grafico LiveCharts2, lista processi.
-    /// Aggiornamenti UI solo tramite <see cref="DispatcherQueue.TryEnqueue"/> dopo lavoro in background;
-    /// polling serializzato con <see cref="SemaphoreSlim"/> (1,1).
+    /// Il polling è su <see cref="DispatcherTimer"/>; WMI/processi serializzati con <see cref="SemaphoreSlim"/> (1,1).
+    /// Le proprietà UI si aggiornano solo dentro <c>_dispatcher.TryEnqueue</c> (mai GetForCurrentThread nei Task).
     /// </summary>
     public partial class MonitorViewModel : ObservableObject, IDisposable
     {
@@ -34,6 +35,7 @@ namespace SysSuite.ViewModels
         private readonly ObservableCollection<float> _cpuValues = new();
         private readonly ObservableCollection<double> _ramValues = new();
 
+        private readonly object _shutdownLock = new();
         private bool _disposed;
 
         private readonly ISeries[] _chartSeries;
@@ -64,7 +66,7 @@ namespace SysSuite.ViewModels
             (_chartSeries, _chartXAxes, _chartYAxes) = BuildChartDefinitions(_cpuValues, _ramValues);
 
             _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
-            _timer.Tick += (_, _) => _ = OnTimerTickAsync();
+            _timer.Tick += OnTimerTick;
         }
 
         private static (ISeries[] series, ICartesianAxis[] xAxes, ICartesianAxis[] yAxes) BuildChartDefinitions(
@@ -122,6 +124,8 @@ namespace SysSuite.ViewModels
             return (series, xAxes, yAxes);
         }
 
+        [ObservableProperty] private double _cpuUsage;
+        [ObservableProperty] private double _ramUsage;
         [ObservableProperty] private string _liveCpuText = "";
         [ObservableProperty] private string _liveRamText = "";
         [ObservableProperty] private string _processCountText = "";
@@ -141,12 +145,10 @@ namespace SysSuite.ViewModels
             _ = RunSampleAndProcessesAsync();
         }
 
-        /// <summary>Ferma il timer e rilascia risorse (chiamare da Unloaded della pagina).</summary>
-        public void StopMonitoring()
-        {
-            _timer.Stop();
-            Dispose();
-        }
+        /// <summary>Ferma il timer, attende il campionamento in corso e rilascia le risorse (Unloaded).</summary>
+        public void StopMonitoring() => ShutdownCore();
+
+        private void OnTimerTick(object? sender, object? e) => _ = OnTimerTickAsync();
 
         [RelayCommand]
         private async Task RefreshAsync() => await RunSampleAndProcessesAsync().ConfigureAwait(true);
@@ -193,18 +195,15 @@ namespace SysSuite.ViewModels
             }
 
             bool ok = _pm.KillProcess(pid);
-            ProcessCountText = ok
+            string msg = ok
                 ? "Processo " + name + " terminato."
                 : "Kill PID " + pid + " fallito (potrebbe richiedere Admin).";
+            _dispatcher.TryEnqueue(() => ProcessCountText = msg);
             await RunSampleAndProcessesAsync().ConfigureAwait(true);
         }
 
         private bool CanKillSelected() => SelectedProcess != null;
 
-        /// <summary>
-        /// CPU letta sul thread del timer (UI); WMI + processi sotto semaforo senza accavallamento.
-        /// Aggiornamento ObservableCollection e metriche solo via <see cref="DispatcherQueue.TryEnqueue"/>.
-        /// </summary>
         private async Task OnTimerTickAsync()
         {
             if (_disposed)
@@ -226,6 +225,9 @@ namespace SysSuite.ViewModels
 
             try
             {
+                if (_disposed)
+                    return;
+
                 double ram = await Task.Run(QueryRamPercent).ConfigureAwait(false);
                 string filterSnapshot = SearchFilter;
                 string sortCol = SortColumn;
@@ -237,6 +239,8 @@ namespace SysSuite.ViewModels
 
                 bool enqueued = _dispatcher.TryEnqueue(() =>
                 {
+                    if (_disposed)
+                        return;
                     try
                     {
                         ApplyLiveCpuRamSample(cpu, ram);
@@ -251,12 +255,12 @@ namespace SysSuite.ViewModels
 
                 if (!enqueued)
                 {
-                    /* coda dispatcher non disponibile (shutdown): ignora */
+                    /* shutdown: coda non accetta lavoro */
                 }
             }
             finally
             {
-                _sampleGate.Release();
+                try { _sampleGate.Release(); } catch { }
             }
         }
 
@@ -278,6 +282,9 @@ namespace SysSuite.ViewModels
 
             try
             {
+                if (_disposed)
+                    return;
+
                 double ram = await Task.Run(QueryRamPercent).ConfigureAwait(false);
                 string filterSnapshot = SearchFilter;
                 string sortCol = SortColumn;
@@ -289,6 +296,8 @@ namespace SysSuite.ViewModels
 
                 _dispatcher.TryEnqueue(() =>
                 {
+                    if (_disposed)
+                        return;
                     try
                     {
                         ApplyLiveCpuRamSample(cpu, ram);
@@ -300,12 +309,15 @@ namespace SysSuite.ViewModels
             }
             finally
             {
-                _sampleGate.Release();
+                try { _sampleGate.Release(); } catch { }
             }
         }
 
         private void ApplyLiveCpuRamSample(float cpu, double ram)
         {
+            CpuUsage = cpu;
+            RamUsage = ram;
+
             _cpuValues.Add(cpu);
             if (_cpuValues.Count > GraphPoints)
                 _cpuValues.RemoveAt(0);
@@ -411,21 +423,53 @@ namespace SysSuite.ViewModels
                 items.RemoveAt(items.Count - 1);
         }
 
+        private void ShutdownCore()
+        {
+            lock (_shutdownLock)
+            {
+                if (_disposed)
+                    return;
+
+                _timer.Stop();
+                _timer.Tick -= OnTimerTick;
+
+                bool entered = false;
+                try
+                {
+                    entered = _sampleGate.Wait(TimeSpan.FromSeconds(20));
+                }
+                catch (ObjectDisposedException) { }
+                catch { }
+
+                if (entered)
+                {
+                    try
+                    {
+                        _sampleGate.Release();
+                    }
+                    catch { }
+
+                    try
+                    {
+                        _sampleGate.Dispose();
+                    }
+                    catch { }
+                }
+
+                try
+                {
+                    _cpuCounter?.Dispose();
+                }
+                catch { }
+
+                _disposed = true;
+            }
+        }
+
         public void Dispose()
         {
-            if (_disposed)
-                return;
-            _disposed = true;
-            _timer.Stop();
-            try
-            {
-                _cpuCounter?.Dispose();
-            }
-            catch
-            {
-                /* ignore */
-            }
-
+            ShutdownCore();
+            GC.SuppressFinalize(this);
         }
     }
 }

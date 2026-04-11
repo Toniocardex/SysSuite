@@ -4,8 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.WinUI"
     xmlns:models="using:SysSuite.Models"
-    xmlns:local="using:SysSuite.Views"
-    x:DataType="local:MonitorPage"
     Background="{StaticResource SysBGBrush}"
     Loaded="MonitorPage_Loaded"
     Unloaded="MonitorPage_Unloaded">
@@ -25,13 +23,13 @@
         <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Content="Aggiorna" Style="{StaticResource SysButtonPrimary}"
-                    Command="{x:Bind ViewModel.RefreshCommand}"/>
+                    Command="{Binding RefreshCommand}"/>
                 <Button Content="Termina processo" Style="{StaticResource SysButtonDanger}"
-                    Command="{x:Bind ViewModel.KillSelectedCommand}"/>
+                    Command="{Binding KillSelectedCommand}"/>
                 <TextBox PlaceholderText="Filtra per nome..."
                     Style="{StaticResource SysTextBox}" Width="200"
-                    Text="{x:Bind ViewModel.SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <TextBlock Text="{x:Bind ViewModel.ProcessCountText, Mode=OneWay}"
+                    Text="{Binding SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Text="{Binding ProcessCountText, Mode=OneWay}"
                     Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
@@ -56,17 +54,17 @@
                             <TextBlock Text="RAM" FontFamily="Consolas" FontSize="10"
                                 Foreground="#3B9EFF" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="{x:Bind ViewModel.LiveCpuText, Mode=OneWay}"
+                        <TextBlock Text="{Binding LiveCpuText, Mode=OneWay}"
                             FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"
                             Foreground="#00D4A0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{x:Bind ViewModel.LiveRamText, Mode=OneWay}"
+                        <TextBlock Text="{Binding LiveRamText, Mode=OneWay}"
                             FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"
                             Foreground="#3B9EFF" VerticalAlignment="Center"/>
                     </StackPanel>
                     <lvc:CartesianChart
-                        Series="{x:Bind ViewModel.ChartSeries, Mode=OneWay}"
-                        XAxes="{x:Bind ViewModel.ChartXAxes, Mode=OneWay}"
-                        YAxes="{x:Bind ViewModel.ChartYAxes, Mode=OneWay}"
+                        Series="{Binding ChartSeries, Mode=OneWay}"
+                        XAxes="{Binding ChartXAxes, Mode=OneWay}"
+                        YAxes="{Binding ChartYAxes, Mode=OneWay}"
                         Height="120"
                         Background="Transparent"
                         AnimationsSpeed="0:0:0.200"/>
@@ -86,20 +84,20 @@
                             <ColumnDefinition Width="70"/><ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Content="PID" Style="{StaticResource SysButtonGhost}"
-                            Padding="0" Command="{x:Bind ViewModel.SortByColumnCommand}" CommandParameter="PID"/>
+                            Padding="0" Command="{Binding SortByColumnCommand}" CommandParameter="PID"/>
                         <Button Grid.Column="1" Content="NOME" Style="{StaticResource SysButtonGhost}"
-                            Padding="0" Command="{x:Bind ViewModel.SortByColumnCommand}" CommandParameter="Name"/>
+                            Padding="0" Command="{Binding SortByColumnCommand}" CommandParameter="Name"/>
                         <Button Grid.Column="2" Content="CPU %" Style="{StaticResource SysButtonGhost}"
-                            Padding="0" Command="{x:Bind ViewModel.SortByColumnCommand}" CommandParameter="CpuPercent"/>
+                            Padding="0" Command="{Binding SortByColumnCommand}" CommandParameter="CpuPercent"/>
                         <Button Grid.Column="3" Content="RAM (MB)" Style="{StaticResource SysButtonGhost}"
-                            Padding="0" Command="{x:Bind ViewModel.SortByColumnCommand}" CommandParameter="RamMB"/>
+                            Padding="0" Command="{Binding SortByColumnCommand}" CommandParameter="RamMB"/>
                         <Button Grid.Column="4" Content="THREAD" Style="{StaticResource SysButtonGhost}"
-                            Padding="0" Command="{x:Bind ViewModel.SortByColumnCommand}" CommandParameter="Threads"/>
+                            Padding="0" Command="{Binding SortByColumnCommand}" CommandParameter="Threads"/>
                         <TextBlock Grid.Column="5" Text="STATO" Style="{StaticResource SysHeading3}"/>
                     </Grid>
                     <ListView Grid.Row="1" Background="Transparent" BorderThickness="0"
-                        ItemsSource="{x:Bind ViewModel.ProcessItems, Mode=OneWay}"
-                        SelectedItem="{x:Bind ViewModel.SelectedProcess, Mode=TwoWay}">
+                        ItemsSource="{Binding ProcessItems, Mode=OneWay}"
+                        SelectedItem="{Binding SelectedProcess, Mode=TwoWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:ProcessEntry">
                                 <Grid Padding="0,4">

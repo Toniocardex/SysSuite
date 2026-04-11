@@ -49,7 +49,7 @@ namespace SysSuite
             services.AddTransient(sp => new MonitorViewModel(
                 DispatcherQueue.GetForCurrentThread()
                     ?? throw new InvalidOperationException(
-                        "MonitorViewModel va risolto sul thread UI (DispatcherQueue)."),
+                        "MonitorViewModel: risolvere sul thread UI (DispatcherQueue)."),
                 sp.GetRequiredService<ProcessManager>()));
             Services = services.BuildServiceProvider();
         }
