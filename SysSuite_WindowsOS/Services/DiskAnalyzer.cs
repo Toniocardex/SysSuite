@@ -1,86 +1,120 @@
 using System.Management;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using SysSuite.Models;
+using SerilogLogger = Serilog.Log;
 
 namespace SysSuite.Services
 {
     /// <summary>Analisi cartelle, file grandi, S.M.A.R.T.</summary>
     public class DiskAnalyzer
     {
-        public event Action<string,string>? Log;
+        public event Action<string, string>? Log;
 
-        public List<DiskEntry> GetHeavyFolders(string root, int depth = 2,
-            IProgress<string>? progress = null)
+        /// <summary>Scansiona cartelle sotto <paramref name="root"/> e produce risultati in streaming (nessuna List monolitica).</summary>
+        public async IAsyncEnumerable<DiskEntry> GetHeavyFoldersAsync(
+            string root,
+            int depth = 2,
+            IProgress<string>? progress = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var results = new List<DiskEntry>();
+            await Task.Yield();
+            var searchOpt = depth == 1 ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
+            IEnumerable<string> dirs;
             try
             {
-                var dirs = Directory.EnumerateDirectories(root, "*",
-                    depth == 1 ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories)
-                    .Take(500);
+                dirs = Directory.EnumerateDirectories(root, "*", searchOpt).Take(500);
+            }
+            catch (Exception ex)
+            {
+                Log?.Invoke("Analisi cartelle: " + ex.Message, "err");
+                SerilogLogger.Warning(ex, "Analisi cartelle: {Message}", ex.Message);
+                yield break;
+            }
 
-                foreach (var dir in dirs)
+            foreach (var dir in dirs)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report(dir);
+                DiskEntry? row = null;
+                try
                 {
-                    progress?.Report(dir);
-                    try
+                    var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+                    long size = 0;
+                    foreach (var f in files)
                     {
-                        var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
-                        long size  = files.Sum(f => new FileInfo(f).Length);
-                        results.Add(new DiskEntry
+                        try { size += new FileInfo(f).Length; }
+                        catch { /* file singolo ignorato */ }
+                    }
+
+                    row = new DiskEntry
+                    {
+                        Path = dir,
+                        Name = Path.GetFileName(dir),
+                        SizeBytes = size,
+                        FileCount = files.Length,
+                        FolderCount = Directory.GetDirectories(dir).Length,
+                        LastWrite = Directory.GetLastWriteTime(dir)
+                    };
+                }
+                catch { /* cartella ignorata */ }
+
+                if (row != null)
+                {
+                    yield return row;
+                    await Task.Yield();
+                }
+            }
+        }
+
+        /// <summary>Scansiona file grandi sotto <paramref name="root"/> in streaming.</summary>
+        public async IAsyncEnumerable<DiskEntry> GetLargeFilesAsync(
+            string root,
+            long minBytes = 100 * 1024 * 1024,
+            IProgress<string>? progress = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            IEnumerable<string> paths;
+            try
+            {
+                paths = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories);
+            }
+            catch (Exception ex)
+            {
+                Log?.Invoke("File grandi: " + ex.Message, "err");
+                SerilogLogger.Warning(ex, "File grandi: {Message}", ex.Message);
+                yield break;
+            }
+
+            foreach (var f in paths)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report(f);
+                DiskEntry? entry = null;
+                try
+                {
+                    var fi = new FileInfo(f);
+                    if (fi.Length >= minBytes)
+                    {
+                        entry = new DiskEntry
                         {
-                            Path        = dir,
-                            Name        = Path.GetFileName(dir),
-                            SizeBytes   = size,
-                            FileCount   = files.Length,
-                            FolderCount = Directory.GetDirectories(dir).Length,
-                            LastWrite   = Directory.GetLastWriteTime(dir)
-                        });
+                            Path = fi.DirectoryName ?? "",
+                            Name = fi.Name,
+                            SizeBytes = fi.Length,
+                            LastWrite = fi.LastWriteTime
+                        };
                     }
-                    catch { }
                 }
-            }
-            catch (Exception ex) { Log?.Invoke($"Analisi: {ex.Message}", "err"); }
+                catch { /* file ignorato */ }
 
-            return results.OrderByDescending(d => d.SizeBytes).Take(100).ToList();
-        }
-
-        public Task<List<DiskEntry>> GetHeavyFoldersAsync(string root, int depth = 2,
-            IProgress<string>? progress = null, CancellationToken cancellationToken = default) =>
-            Task.Run(() => GetHeavyFolders(root, depth, progress), cancellationToken);
-
-        public List<DiskEntry> GetLargeFiles(string root, long minBytes = 100 * 1024 * 1024,
-            IProgress<string>? progress = null)
-        {
-            var results = new List<DiskEntry>();
-            try
-            {
-                foreach (var f in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+                if (entry != null)
                 {
-                    progress?.Report(f);
-                    try
-                    {
-                        var fi = new FileInfo(f);
-                        if (fi.Length >= minBytes)
-                            results.Add(new DiskEntry
-                            {
-                                Path      = fi.DirectoryName ?? "",
-                                Name      = fi.Name,
-                                SizeBytes = fi.Length,
-                                LastWrite = fi.LastWriteTime
-                            });
-                    }
-                    catch { }
+                    yield return entry;
+                    await Task.Yield();
                 }
             }
-            catch (Exception ex) { Log?.Invoke($"File grandi: {ex.Message}", "err"); }
-
-            return results.OrderByDescending(d => d.SizeBytes).Take(200).ToList();
         }
-
-        public Task<List<DiskEntry>> GetLargeFilesAsync(string root, long minBytes = 100 * 1024 * 1024,
-            IProgress<string>? progress = null, CancellationToken cancellationToken = default) =>
-            Task.Run(() => GetLargeFiles(root, minBytes, progress), cancellationToken);
 
         public List<SmartData> GetSmartData()
         {
@@ -95,31 +129,35 @@ namespace SysSuite.Services
                 {
                     var sd = new SmartData
                     {
-                        DiskModel    = disk["Model"]?.ToString()?.Trim() ?? "",
+                        DiskModel = disk["Model"]?.ToString()?.Trim() ?? "",
                         SerialNumber = disk["SerialNumber"]?.ToString()?.Trim() ?? "",
-                        Interface    = disk["InterfaceType"]?.ToString() ?? "",
-                        SizeBytes    = Convert.ToInt64(disk["Size"] ?? 0)
+                        Interface = disk["InterfaceType"]?.ToString() ?? "",
+                        SizeBytes = Convert.ToInt64(disk["Size"] ?? 0)
                     };
 
                     foreach (ManagementObject f in failQ.Get())
                     {
                         if (f["InstanceName"]?.ToString()?.Contains(
-                            disk["Index"]?.ToString() ?? "") == true)
+                            disk["Index"]?.ToString() ?? "", StringComparison.Ordinal) == true)
                         {
                             sd.FailPredicted = Convert.ToBoolean(f["PredictFailure"]);
                             break;
                         }
                     }
 
-                    // Attributi critici noti
                     sd.Attributes["Reallocated Sectors"] = 0;
-                    sd.Attributes["Pending Sectors"]     = 0;
-                    sd.Attributes["Uncorrectable Errors"]= 0;
+                    sd.Attributes["Pending Sectors"] = 0;
+                    sd.Attributes["Uncorrectable Errors"] = 0;
 
                     result.Add(sd);
                 }
             }
-            catch (Exception ex) { Log?.Invoke($"SMART: {ex.Message}", "err"); }
+            catch (Exception ex)
+            {
+                Log?.Invoke("SMART: " + ex.Message, "err");
+                SerilogLogger.Warning(ex, "SMART: {Message}", ex.Message);
+            }
+
             return result;
         }
 

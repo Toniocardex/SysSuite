@@ -8,32 +8,46 @@
             <StackPanel Spacing="14">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <TextBlock Text="TELEMETRIA E TRACCIAMENTO" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <ProgressRing x:Name="RingTelemetry" Width="22" Height="22" VerticalAlignment="Center"
-                        IsActive="False" Visibility="Collapsed"/>
+                    <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="{Binding IsTelemetrySectionBusy}"
+                        Visibility="{Binding TelemetryRingVisibility}"/>
                 </StackPanel>
                 <TextBlock Text="Le modifiche a Telemetria, Cronologia e Cortana richiedono privilegi admin."
                     Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
-                <ToggleSwitch x:Name="TogTelemetry" Header="Telemetria Microsoft"
-                    OnContent="Attiva" OffContent="Disabilitata" Toggled="TogPrivacy_Toggled" Tag="telemetry"/>
-                <ToggleSwitch x:Name="TogAdId" Header="ID Pubblicità"
-                    OnContent="Attivo" OffContent="Disabilitato" Toggled="TogPrivacy_Toggled" Tag="adid"/>
-                <ToggleSwitch x:Name="TogActivity" Header="Cronologia attività"
-                    OnContent="Attiva" OffContent="Disabilitata" Toggled="TogPrivacy_Toggled" Tag="activity"/>
+                <ToggleSwitch Header="Telemetria Microsoft"
+                    OnContent="Attiva" OffContent="Disabilitata"
+                    IsOn="{Binding IsTelemetryOn, Mode=TwoWay}"
+                    IsEnabled="{Binding ArePrivacyTogglesEnabled}"/>
+                <ToggleSwitch Header="ID Pubblicità"
+                    OnContent="Attivo" OffContent="Disabilitato"
+                    IsOn="{Binding IsAdIdOn, Mode=TwoWay}"
+                    IsEnabled="{Binding ArePrivacyTogglesEnabled}"/>
+                <ToggleSwitch Header="Cronologia attività"
+                    OnContent="Attiva" OffContent="Disabilitata"
+                    IsOn="{Binding IsActivityOn, Mode=TwoWay}"
+                    IsEnabled="{Binding ArePrivacyTogglesEnabled}"/>
             </StackPanel>
         </Border>
         <Border Style="{StaticResource SysCard}">
             <StackPanel Spacing="14">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <TextBlock Text="ASSISTENTI E SUGGERIMENTI" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
-                    <ProgressRing x:Name="RingAssist" Width="22" Height="22" VerticalAlignment="Center"
-                        IsActive="False" Visibility="Collapsed"/>
+                    <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="{Binding IsAssistSectionBusy}"
+                        Visibility="{Binding AssistRingVisibility}"/>
                 </StackPanel>
-                <ToggleSwitch x:Name="TogCortana" Header="Cortana"
-                    OnContent="Attiva" OffContent="Disabilitata" Toggled="TogPrivacy_Toggled" Tag="cortana"/>
-                <ToggleSwitch x:Name="TogStartSugg" Header="Suggerimenti nel menu Start"
-                    OnContent="Attivi" OffContent="Disabilitati" Toggled="TogPrivacy_Toggled" Tag="startsugg"/>
-                <ToggleSwitch x:Name="TogLockTips" Header="Suggerimenti schermata di blocco"
-                    OnContent="Attivi" OffContent="Disabilitati" Toggled="TogPrivacy_Toggled" Tag="locktips"/>
+                <ToggleSwitch Header="Cortana"
+                    OnContent="Attiva" OffContent="Disabilitata"
+                    IsOn="{Binding IsCortanaOn, Mode=TwoWay}"
+                    IsEnabled="{Binding ArePrivacyTogglesEnabled}"/>
+                <ToggleSwitch Header="Suggerimenti nel menu Start"
+                    OnContent="Attivi" OffContent="Disabilitati"
+                    IsOn="{Binding IsStartSuggOn, Mode=TwoWay}"
+                    IsEnabled="{Binding ArePrivacyTogglesEnabled}"/>
+                <ToggleSwitch Header="Suggerimenti schermata di blocco"
+                    OnContent="Attivi" OffContent="Disabilitati"
+                    IsOn="{Binding IsLockTipsOn, Mode=TwoWay}"
+                    IsEnabled="{Binding ArePrivacyTogglesEnabled}"/>
             </StackPanel>
         </Border>
     </StackPanel>

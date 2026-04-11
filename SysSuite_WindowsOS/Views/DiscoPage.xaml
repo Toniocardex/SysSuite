@@ -17,23 +17,35 @@
         <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button x:Name="BtnHeavyFolders" Content="Cartelle pesanti (C:)" Style="{StaticResource SysButtonSecondary}" Click="BtnFolders_Click"/>
-                    <Button x:Name="BtnLargeFiles" Content="File grandi >100MB" Style="{StaticResource SysButtonSecondary}" Click="BtnLargeFiles_Click"/>
-                    <Button x:Name="BtnSmart" Content="Dati S.M.A.R.T." Style="{StaticResource SysButtonSecondary}" Click="BtnSmart_Click"/>
-                    <Button x:Name="BtnDuplicates" Content="Trova duplicati" Style="{StaticResource SysButtonSecondary}" Click="BtnDuplicates_Click"/>
-                    <ProgressRing x:Name="BusyRing" Width="28" Height="28" IsActive="True" Visibility="Collapsed" VerticalAlignment="Center"/>
-                    <ProgressBar x:Name="PbScan" Style="{StaticResource SysProgressBar}" Width="160" VerticalAlignment="Center" IsIndeterminate="False"/>
-                    <TextBlock x:Name="TxtStatus" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
+                    <Button Content="Cartelle pesanti (C:)" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding ScanHeavyFoldersCommand}"/>
+                    <Button Content="File grandi >100MB" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding ScanLargeFilesCommand}"/>
+                    <Button Content="Dati S.M.A.R.T." Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding ScanSmartCommand}"/>
+                    <Button Content="Trova duplicati" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding ScanDuplicatesCommand}"/>
+                    <Button Content="Apri in Explorer" Style="{StaticResource SysButtonSecondary}"
+                            Command="{Binding OpenExplorerForSelectionCommand}"/>
+                    <ProgressRing Width="28" Height="28"
+                                  IsActive="{Binding IsBusy}"
+                                  Visibility="{Binding BusyRingVisibility}"
+                                  VerticalAlignment="Center"/>
+                    <ProgressBar Style="{StaticResource SysProgressBar}" Width="160" VerticalAlignment="Center"
+                                 IsIndeterminate="{Binding IsBusy}"/>
+                    <TextBlock Text="{Binding ScanStatusText}" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
         </Border>
         <Border Grid.Row="2" Style="{StaticResource SysCard}">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                <TextBlock x:Name="TxtScanType" Grid.Row="0"
-                    Text="Seleziona una scansione per iniziare."
+                <TextBlock Grid.Row="0"
+                    Text="{Binding ScanTypeTitle}"
                     Style="{StaticResource SysHeading3}" Margin="0,0,0,10"/>
-                <ListView x:Name="LvItems" Grid.Row="1" Background="Transparent" BorderThickness="0">
+                <ListView Grid.Row="1" Background="Transparent" BorderThickness="0"
+                          ItemsSource="{Binding ListRows}"
+                          SelectedItem="{Binding SelectedRow, Mode=TwoWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="0,4">

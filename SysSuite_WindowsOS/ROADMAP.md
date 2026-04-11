@@ -1,10 +1,12 @@
 # SysSuite One — Roadmap
 
-## Versione attuale: v1.4.0
+## Versione attuale: v1.5.0
 
 ---
 
-## ✅ v1.4.0 — Sicurezza Livello 1 (Logging & Anti-Crash) — Completato
+## ✅ Livello 1: Sicurezza (Logging & Exception Handling) — Completato
+
+*(Allineato alla release v1.4.0 — logging strutturato e gestione errori a livello applicazione.)*
 
 - [x] Serilog + Serilog.Sinks.File in `SysSuite.csproj`
 - [x] `ConfigureLogging()` in `App.xaml.cs`: file in `%LocalAppData%\SysSuite\Logs\SysSuite_Log.txt` con `RollingInterval.Day` (14 file conservati)
@@ -12,6 +14,23 @@
 - [x] `ContentDialog` amichevole sulla UI via `DispatcherQueue.TryEnqueue` dopo errore non gestito
 - [x] `ProcessRunner.RunAsync` / `RunCaptureAsync`: log `Warning` se `ExitCode != 0` (processo e codice)
 - [x] Modalità `--boost`: errori loggati e `Log.CloseAndFlush()` prima dell'uscita
+
+---
+
+## ✅ Livello 3: Architettura MVVM & DI — Completato
+
+- [x] **Dependency Injection** (`Microsoft.Extensions.DependencyInjection`): registrazione di servizi e ViewModel in `App.xaml.cs` (`ConfigureServices`)
+- [x] **CommunityToolkit.Mvvm**: `ObservableObject`, `[ObservableProperty]`, `[RelayCommand]` per proprietà osservabili e comandi; logica di business nei ViewModel, non nelle viste
+- [x] **Architettura asincrona e disaccoppiata**: le viste si limitano a `InitializeComponent()` e assegnazione `DataContext` da `App.Services`; operazioni I/O e registry su thread appropriati tramite i servizi
+- [x] **Binding classico** `{Binding ...}` su WinUI (senza `x:Bind` per queste schermate), inclusi `Mode=TwoWay` dove serve (es. Privacy)
+- [x] Pagine / moduli portati al pattern MVVM:
+  - [x] **BatteryPage** + `BatteryViewModel`
+  - [x] **PrivacyPage** (`UserControl` in MainSuite) + `PrivacyViewModel` + `PrivacyService` registrato come singleton
+  - [x] **NetworkPage** + `NetworkViewModel`
+  - [x] **GamingPage** + `GamingViewModel`
+  - [x] **DriverPage** + `DriverViewModel`
+
+> **Nota WinUI:** le `Page` generate dal markup restano con base `Microsoft.UI.Xaml.Controls.Page`; il collegamento al ViewModel avviene nel costruttore code-behind con `GetRequiredService<T>()` (compatibile con il compilatore XAML).
 
 ---
 

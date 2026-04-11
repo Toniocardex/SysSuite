@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Win32;
+using Serilog;
 using SysSuite.Models;
 using System.Threading;
 using System.Threading.Tasks;
@@ -177,35 +178,81 @@ namespace SysSuite.Services
         public List<InstalledApp> GetInstalledApps(string? filter = null)
         {
             var result = new List<InstalledApp>();
-            var regPaths = new[]
-            {
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-                @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
-            };
-            foreach (var path in regPaths)
-            {
-                using var key = Registry.LocalMachine.OpenSubKey(path);
-                if (key == null) continue;
-                foreach (var sub in key.GetSubKeyNames())
-                {
-                    using var app = key.OpenSubKey(sub);
-                    string? name = app?.GetValue("DisplayName")?.ToString();
-                    if (string.IsNullOrEmpty(name)) continue;
-                    if (filter != null && !name.Contains(filter, StringComparison.OrdinalIgnoreCase)) continue;
-                    if (name.StartsWith("Update for") || name.StartsWith("Security Update")) continue;
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    long size = Convert.ToInt64(app?.GetValue("EstimatedSize") ?? 0) * 1024;
-                    result.Add(new InstalledApp
+            void ReadHive(RegistryKey root, string relativePath, string hiveLabel)
+            {
+                try
+                {
+                    using var key = root.OpenSubKey(relativePath);
+                    if (key == null) return;
+
+                    foreach (var sub in key.GetSubKeyNames())
                     {
-                        Name             = name,
-                        Version          = app?.GetValue("DisplayVersion")?.ToString() ?? "",
-                        Publisher        = app?.GetValue("Publisher")?.ToString() ?? "",
-                        InstallDate      = app?.GetValue("InstallDate")?.ToString() ?? "",
-                        SizeBytes        = size,
-                        UninstallString  = app?.GetValue("UninstallString")?.ToString() ?? ""
-                    });
+                        try
+                        {
+                            using var app = key.OpenSubKey(sub);
+                            if (app == null) continue;
+
+                            string? name = app.GetValue("DisplayName")?.ToString();
+                            if (string.IsNullOrWhiteSpace(name))
+                            {
+                                Serilog.Log.Warning(
+                                    "[App] DisplayName mancante o vuoto. Hive={Hive}, SubKey={SubKey}",
+                                    hiveLabel, sub);
+                                continue;
+                            }
+
+                            if (!seen.Add(name))
+                                continue;
+                            if (filter != null && !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                                continue;
+                            if (name.StartsWith("Update for", StringComparison.OrdinalIgnoreCase)
+                                || name.StartsWith("Security Update", StringComparison.OrdinalIgnoreCase))
+                                continue;
+
+                            long sizeBytes = 0;
+                            try
+                            {
+                                sizeBytes = Convert.ToInt64(app.GetValue("EstimatedSize") ?? 0) * 1024;
+                            }
+                            catch (Exception ex)
+                            {
+                                Serilog.Log.Warning(ex,
+                                    "[App] EstimatedSize non valido. Hive={Hive}, SubKey={SubKey}, DisplayName={Name}",
+                                    hiveLabel, sub, name);
+                            }
+
+                            result.Add(new InstalledApp
+                            {
+                                Name = name,
+                                Version = app.GetValue("DisplayVersion")?.ToString() ?? "",
+                                Publisher = app.GetValue("Publisher")?.ToString() ?? "",
+                                InstallDate = app.GetValue("InstallDate")?.ToString() ?? "",
+                                SizeBytes = sizeBytes,
+                                UninstallString = app.GetValue("UninstallString")?.ToString() ?? ""
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Serilog.Log.Warning(ex,
+                                "[App] Errore lettura singola app. Hive={Hive}, SubKey={SubKey}",
+                                hiveLabel, sub);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Serilog.Log.Warning(ex,
+                        "[App] Errore apertura ramo Uninstall. Hive={Hive}, Path={Path}",
+                        hiveLabel, relativePath);
                 }
             }
+
+            ReadHive(Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM");
+            ReadHive(Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM-WOW64");
+            ReadHive(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU");
+
             return result.OrderBy(a => a.Name).ToList();
         }
 

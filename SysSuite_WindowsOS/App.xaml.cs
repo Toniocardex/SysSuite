@@ -32,10 +32,17 @@ namespace SysSuite
             services.AddSingleton<NetworkService>();
             services.AddSingleton<GamingService>();
             services.AddSingleton<DriverService>();
+            services.AddSingleton<PrivacyService>();
+            services.AddSingleton<BrowserService>();
+            services.AddSingleton<DiskAnalyzer>();
+            services.AddSingleton<CleanupService>();
+            services.AddTransient<DiscoViewModel>();
             services.AddTransient<BatteryViewModel>();
             services.AddTransient<NetworkViewModel>();
             services.AddTransient<GamingViewModel>();
             services.AddTransient<DriverViewModel>();
+            services.AddTransient<PrivacyViewModel>();
+            services.AddTransient<BrowserViewModel>();
             Services = services.BuildServiceProvider();
         }
 
