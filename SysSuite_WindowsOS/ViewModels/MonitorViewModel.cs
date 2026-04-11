@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,8 +20,11 @@ namespace SysSuite.ViewModels
 {
     /// <summary>
     /// Monitor live: campionamento CPU/RAM, grafico LiveCharts2, lista processi.
-    /// Il polling è su <see cref="DispatcherTimer"/>; WMI/processi serializzati con <see cref="SemaphoreSlim"/> (1,1).
-    /// Le proprietà UI si aggiornano solo dentro <c>_dispatcher.TryEnqueue</c> (mai GetForCurrentThread nei Task).
+    /// Il polling è su <see cref="DispatcherTimer"/> (thread UI); WMI/rete/processi in <see cref="Task.Run"/>
+    /// serializzati con <see cref="SemaphoreSlim"/> (1,1) — nessun accavallamento (Smart Sync).
+    /// Il <see cref="DispatcherQueue"/> viene iniettato nel costruttore (catturato sul thread UI in DI);
+    /// le proprietà osservabili e le <see cref="ObservableCollection{T}"/> si aggiornano solo dentro
+    /// <c>_dispatcher.TryEnqueue</c>. Non usare <see cref="DispatcherQueue.GetForCurrentThread"/> nei Task in background.
     /// </summary>
     public partial class MonitorViewModel : ObservableObject, IDisposable
     {
@@ -35,6 +39,10 @@ namespace SysSuite.ViewModels
         private readonly ObservableCollection<float> _cpuValues = new();
         private readonly ObservableCollection<double> _ramValues = new();
 
+        private long _netPrevBytesReceived;
+        private long _netPrevBytesSent;
+        private long _netPrevTickMs;
+
         private readonly object _shutdownLock = new();
         private bool _disposed;
 
@@ -48,6 +56,7 @@ namespace SysSuite.ViewModels
 
         public ObservableCollection<ProcessEntry> ProcessItems { get; } = new();
 
+        /// <param name="dispatcher">Coda del thread UI (es. <c>GetForCurrentThread()</c> solo in <c>ConfigureServices</c>, mai nei Task).</param>
         public MonitorViewModel(DispatcherQueue dispatcher, ProcessManager pm)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -126,6 +135,7 @@ namespace SysSuite.ViewModels
 
         [ObservableProperty] private double _cpuUsage;
         [ObservableProperty] private double _ramUsage;
+        [ObservableProperty] private string _liveNetworkText = "";
         [ObservableProperty] private string _liveCpuText = "";
         [ObservableProperty] private string _liveRamText = "";
         [ObservableProperty] private string _processCountText = "";
@@ -136,8 +146,9 @@ namespace SysSuite.ViewModels
 
         partial void OnSelectedProcessChanged(ProcessEntry? value) => KillSelectedCommand.NotifyCanExecuteChanged();
 
+        /// <summary>Avvia il <see cref="DispatcherTimer"/>; chiamare dal Loaded (thread UI), tipicamente via <see cref="StartMonitoringCommand"/>.</summary>
         [RelayCommand]
-        private void StartMonitoring()
+        public void StartMonitoring()
         {
             if (_disposed || _timer.IsEnabled)
                 return;
@@ -228,7 +239,12 @@ namespace SysSuite.ViewModels
                 if (_disposed)
                     return;
 
-                double ram = await Task.Run(QueryRamPercent).ConfigureAwait(false);
+                (double ram, string netText) = await Task.Run(() =>
+                {
+                    double r = QueryRamPercent();
+                    string n = ComputeNetworkRatesText();
+                    return (r, n);
+                }).ConfigureAwait(false);
                 string filterSnapshot = SearchFilter;
                 string sortCol = SortColumn;
                 bool sortAsc = SortAscending;
@@ -243,7 +259,7 @@ namespace SysSuite.ViewModels
                         return;
                     try
                     {
-                        ApplyLiveCpuRamSample(cpu, ram);
+                        ApplyLiveCpuRamSample(cpu, ram, netText);
                         MergeProcessesList(sorted);
                         ProcessCountText = countText;
                     }
@@ -285,7 +301,12 @@ namespace SysSuite.ViewModels
                 if (_disposed)
                     return;
 
-                double ram = await Task.Run(QueryRamPercent).ConfigureAwait(false);
+                (double ram, string netText) = await Task.Run(() =>
+                {
+                    double r = QueryRamPercent();
+                    string n = ComputeNetworkRatesText();
+                    return (r, n);
+                }).ConfigureAwait(false);
                 string filterSnapshot = SearchFilter;
                 string sortCol = SortColumn;
                 bool sortAsc = SortAscending;
@@ -300,7 +321,7 @@ namespace SysSuite.ViewModels
                         return;
                     try
                     {
-                        ApplyLiveCpuRamSample(cpu, ram);
+                        ApplyLiveCpuRamSample(cpu, ram, netText);
                         MergeProcessesList(sorted);
                         ProcessCountText = countText;
                     }
@@ -313,10 +334,11 @@ namespace SysSuite.ViewModels
             }
         }
 
-        private void ApplyLiveCpuRamSample(float cpu, double ram)
+        private void ApplyLiveCpuRamSample(float cpu, double ram, string networkText)
         {
             CpuUsage = cpu;
             RamUsage = ram;
+            LiveNetworkText = networkText;
 
             _cpuValues.Add(cpu);
             if (_cpuValues.Count > GraphPoints)
@@ -349,6 +371,58 @@ namespace SysSuite.ViewModels
             }
 
             return 0;
+        }
+
+        /// <summary>Conteggi NIC aggregate sul thread pool; muta solo campi usati sotto <see cref="_sampleGate"/>.</summary>
+        private string ComputeNetworkRatesText()
+        {
+            try
+            {
+                long inB = 0, outB = 0;
+                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (nic.OperationalStatus != OperationalStatus.Up)
+                        continue;
+                    if (nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
+                        continue;
+                    IPInterfaceStatistics s = nic.GetIPStatistics();
+                    inB += s.BytesReceived;
+                    outB += s.BytesSent;
+                }
+
+                long now = Environment.TickCount64;
+                if (_netPrevTickMs == 0)
+                {
+                    _netPrevBytesReceived = inB;
+                    _netPrevBytesSent = outB;
+                    _netPrevTickMs = now;
+                    return "Rete: —";
+                }
+
+                double dtMs = now - _netPrevTickMs;
+                if (dtMs < 1)
+                    dtMs = 1;
+                double downBps = (inB - _netPrevBytesReceived) / (dtMs / 1000.0);
+                double upBps = (outB - _netPrevBytesSent) / (dtMs / 1000.0);
+                _netPrevBytesReceived = inB;
+                _netPrevBytesSent = outB;
+                _netPrevTickMs = now;
+
+                return "↑ " + FormatDataRate(upBps) + "  ↓ " + FormatDataRate(downBps);
+            }
+            catch
+            {
+                return "Rete: —";
+            }
+        }
+
+        private static string FormatDataRate(double bytesPerSecond)
+        {
+            if (bytesPerSecond < 1024)
+                return bytesPerSecond.ToString("0") + " B/s";
+            if (bytesPerSecond < 1024 * 1024)
+                return (bytesPerSecond / 1024).ToString("0.#") + " KB/s";
+            return (bytesPerSecond / (1024 * 1024)).ToString("0.##") + " MB/s";
         }
 
         private static List<ProcessEntry> BuildSortedSnapshot(List<ProcessEntry> newData, string sortCol, bool sortAsc,

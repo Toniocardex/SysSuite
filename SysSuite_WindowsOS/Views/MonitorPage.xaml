@@ -60,6 +60,9 @@
                         <TextBlock Text="{Binding LiveRamText, Mode=OneWay}"
                             FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"
                             Foreground="#3B9EFF" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding LiveNetworkText, Mode=OneWay}"
+                            FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"
+                            Foreground="#B8A5E8" VerticalAlignment="Center" Margin="12,0,0,0"/>
                     </StackPanel>
                     <lvc:CartesianChart
                         Series="{Binding ChartSeries, Mode=OneWay}"
