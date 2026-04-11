@@ -13,10 +13,15 @@ namespace SysSuite.ViewModels
     public partial class AppManagerViewModel : ObservableObject
     {
         private readonly ProcessManager _pm;
+        private readonly LeftoverScannerService _leftoverScanner;
         private string _mode = "";
         private List<AppManagerRow> _allItems = new();
 
-        public AppManagerViewModel(ProcessManager pm) => _pm = pm;
+        public AppManagerViewModel(ProcessManager pm, LeftoverScannerService leftoverScanner)
+        {
+            _pm = pm;
+            _leftoverScanner = leftoverScanner;
+        }
 
         public ObservableCollection<AppManagerRow> Items { get; } = new();
 
@@ -238,6 +243,40 @@ namespace SysSuite.ViewModels
             try
             {
                 await _pm.UninstallAppAsync(app.UninstallString).ConfigureAwait(true);
+
+                List<string> leftovers = new();
+                try
+                {
+                    leftovers = await _leftoverScanner.ScanLeftoversAsync(app.Col0, app.Col2 ?? "")
+                        .ConfigureAwait(true);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Scansione residui non completata dopo la disinstallazione di {App}", app.Col0);
+                }
+
+                if (leftovers.Count > 0 && xamlRoot != null)
+                {
+                    var residueDlg = new ContentDialog
+                    {
+                        Title = "Residui",
+                        Content = "Disinstallazione completata. Trovati " + leftovers.Count
+                            + " elementi residui (file/chiavi). Vuoi eliminarli?",
+                        PrimaryButtonText = "Sì",
+                        CloseButtonText = "No",
+                        DefaultButton = ContentDialogButton.Close,
+                        XamlRoot = xamlRoot
+                    };
+                    if (await residueDlg.ShowAsync() == ContentDialogResult.Primary)
+                        await _leftoverScanner.DeleteLeftoversAsync(leftovers).ConfigureAwait(true);
+                }
+                else if (leftovers.Count > 0)
+                {
+                    Log.Information(
+                        "Residui rilevati ({Count}) ma nessun XamlRoot: eliminazione saltata per sicurezza.",
+                        leftovers.Count);
+                }
+
                 await ReloadInstalledItemsCoreAsync().ConfigureAwait(true);
                 StatusText = _allItems.Count + " app installate";
             }

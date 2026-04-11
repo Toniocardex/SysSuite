@@ -44,6 +44,7 @@ namespace SysSuite
             services.AddTransient<PrivacyViewModel>();
             services.AddTransient<BrowserViewModel>();
             services.AddSingleton<ProcessManager>();
+            services.AddSingleton<LeftoverScannerService>();
             services.AddTransient<AppManagerViewModel>();
             Services = services.BuildServiceProvider();
         }
