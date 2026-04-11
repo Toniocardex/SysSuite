@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using SysSuite.Core;
+using SysSuite.Models;
 using SysSuite.Services;
 using Windows.UI;
 
@@ -14,51 +15,96 @@ namespace SysSuite.Views
         public DriverPage()
         {
             InitializeComponent();
-            _svc.Log += (m, t) => System.Diagnostics.Debug.WriteLine("[" + t + "] " + m);
-            Loaded += (_, _) => BtnLoad_Click(this, new RoutedEventArgs());
+            _svc.Log += OnServiceLog;
+            Loaded += (_, _) => { _ = InitializeAsync(); };
+        }
+
+        private void OnServiceLog(string msg, string type) =>
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (type == "err")
+                    TxtCount.Text = msg;
+            });
+
+        private void SetDriverUiBusy(bool busy)
+        {
+            RingDriverBusy.IsActive = busy;
+            RingDriverBusy.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            BtnLoadDrivers.IsEnabled = !busy;
+            BtnProblematic.IsEnabled = !busy;
+            BtnBackupDrivers.IsEnabled = !busy;
+            LvDrivers.IsEnabled = !busy;
+        }
+
+        private async Task InitializeAsync()
+        {
+            SetDriverUiBusy(true);
+            try { await RefreshAllDriversAsync(); }
+            catch (Exception ex) { TxtCount.Text = "Errore: " + ex.Message; }
+            finally { SetDriverUiBusy(false); }
+        }
+
+        private static object MapDriverRow(DriverEntry d, bool forceProblemStyle)
+        {
+            bool problem = forceProblemStyle || d.HasProblem;
+            return new
+            {
+                d.Name,
+                d.Manufacturer,
+                d.Version,
+                d.Date,
+                d.DeviceClass,
+                Status = d.HasProblem ? d.Status : "OK",
+                StatusColor = problem
+                    ? new SolidColorBrush(Color.FromArgb(255, 255, 90, 90))
+                    : new SolidColorBrush(Color.FromArgb(255, 52, 211, 153))
+            };
+        }
+
+        private async Task RefreshAllDriversAsync()
+        {
+            var drivers = await _svc.GetDriversAsync().ConfigureAwait(true);
+            LvDrivers.ItemsSource = drivers.Select(d => MapDriverRow(d, false)).ToList();
+            TxtCount.Text = drivers.Count + " driver";
         }
 
         // Lettura driver — NO admin
-        private void BtnLoad_Click(object s, RoutedEventArgs e)
+        private async void BtnLoad_Click(object s, RoutedEventArgs e)
         {
+            SetDriverUiBusy(true);
             try
             {
-                var drivers = _svc.GetDrivers();
-                LvDrivers.ItemsSource = drivers.Select(d => new
-                {
-                    d.Name, d.Manufacturer, d.Version, d.Date, d.DeviceClass,
-                    Status = d.HasProblem ? d.Status : "OK",
-                    StatusColor = d.HasProblem
-                        ? new SolidColorBrush(Color.FromArgb(255, 255, 90, 90))
-                        : new SolidColorBrush(Color.FromArgb(255, 52, 211, 153))
-                }).ToList();
-                TxtCount.Text = drivers.Count + " driver";
+                await RefreshAllDriversAsync();
             }
             catch (Exception ex) { TxtCount.Text = "Errore: " + ex.Message; }
+            finally { SetDriverUiBusy(false); }
         }
 
-        private void BtnProblematic_Click(object s, RoutedEventArgs e)
+        private async void BtnProblematic_Click(object s, RoutedEventArgs e)
         {
+            SetDriverUiBusy(true);
             try
             {
-                var drivers = _svc.GetProblematicDrivers();
-                LvDrivers.ItemsSource = drivers.Select(d => new
-                {
-                    d.Name, d.Manufacturer, d.Version, d.Date, d.DeviceClass,
-                    Status = d.Status,
-                    StatusColor = new SolidColorBrush(Color.FromArgb(255, 255, 90, 90))
-                }).ToList();
+                var drivers = await _svc.GetProblematicDriversAsync().ConfigureAwait(true);
+                LvDrivers.ItemsSource = drivers.Select(d => MapDriverRow(d, true)).ToList();
                 TxtCount.Text = drivers.Count + " problematici";
             }
             catch (Exception ex) { TxtCount.Text = "Errore: " + ex.Message; }
+            finally { SetDriverUiBusy(false); }
         }
 
         // Backup DISM — admin
-        private void BtnBackup_Click(object s, RoutedEventArgs e)
+        private async void BtnBackup_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Backup Driver (DISM)")) return;
-            try { var p = _svc.BackupDrivers(); TxtCount.Text = "Backup: " + p; }
+            SetDriverUiBusy(true);
+            try
+            {
+                string p = await _svc.BackupDriversAsync().ConfigureAwait(true);
+                TxtCount.Text = "Backup: " + p;
+            }
             catch (Exception ex) { TxtCount.Text = "Errore: " + ex.Message; }
+            finally { SetDriverUiBusy(false); }
         }
 
         private bool CheckAdmin(string label)

@@ -16,9 +16,11 @@
         </StackPanel>
         <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Content="Carica tutti i driver" Style="{StaticResource SysButtonSecondary}" Click="BtnLoad_Click"/>
-                <Button Content="Mostra solo problematici" Style="{StaticResource SysButtonSecondary}" Click="BtnProblematic_Click"/>
-                <Button Content="Backup driver (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnBackup_Click"/>
+                <Button x:Name="BtnLoadDrivers" Content="Carica tutti i driver" Style="{StaticResource SysButtonSecondary}" Click="BtnLoad_Click"/>
+                <Button x:Name="BtnProblematic" Content="Mostra solo problematici" Style="{StaticResource SysButtonSecondary}" Click="BtnProblematic_Click"/>
+                <Button x:Name="BtnBackupDrivers" Content="Backup driver (Desktop)" Style="{StaticResource SysButtonPrimary}" Click="BtnBackup_Click"/>
+                <ProgressRing x:Name="RingDriverBusy" Width="22" Height="22" VerticalAlignment="Center"
+                    IsActive="False" Visibility="Collapsed"/>
                 <TextBlock x:Name="TxtCount" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>

@@ -1,4 +1,7 @@
 using System.Management;
+using System.Threading;
+using System.Threading.Tasks;
+using SysSuite.Core;
 using SysSuite.Models;
 
 namespace SysSuite.Services
@@ -6,8 +9,7 @@ namespace SysSuite.Services
     /// <summary>Lista driver, driver problematici, backup con DISM.</summary>
     public class DriverService
     {
-        public event Action<string,string>? Log;
-
+        public event Action<string, string>? Log;
 
         /// <summary>
         /// Converte la data WMI (20231201000000.000000+000) in formato leggibile (01/12/2023).
@@ -18,7 +20,6 @@ namespace SysSuite.Services
             if (string.IsNullOrEmpty(raw) || raw.Length < 8) return "";
             try
             {
-                // Formato WMI: YYYYMMDDHHMMSS.ffffff+UUU
                 int y = int.Parse(raw.Substring(0, 4));
                 int m = int.Parse(raw.Substring(4, 2));
                 int d = int.Parse(raw.Substring(6, 2));
@@ -27,6 +28,7 @@ namespace SysSuite.Services
             }
             catch { return raw.Length >= 8 ? raw.Substring(6, 2) + "/" + raw.Substring(4, 2) + "/" + raw.Substring(0, 4) : ""; }
         }
+
         public List<DriverEntry> GetDrivers()
         {
             var result = new List<DriverEntry>();
@@ -52,6 +54,10 @@ namespace SysSuite.Services
             return result.OrderBy(d => d.DeviceClass).ThenBy(d => d.Name).ToList();
         }
 
+        /// <summary>Esegue la scansione WMI su thread pool (non blocca la UI).</summary>
+        public Task<List<DriverEntry>> GetDriversAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(GetDrivers, cancellationToken);
+
         public List<DriverEntry> GetProblematicDrivers()
         {
             var result = new List<DriverEntry>();
@@ -73,17 +79,24 @@ namespace SysSuite.Services
             return result;
         }
 
-        public string BackupDrivers()
+        public Task<List<DriverEntry>> GetProblematicDriversAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(GetProblematicDrivers, cancellationToken);
+
+        /// <summary>Backup driver con DISM (richiede admin). Output catturato per verificare il codice di uscita.</summary>
+        public async Task<string> BackupDriversAsync(CancellationToken cancellationToken = default)
         {
             string path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                 $"SysSuite_Drivers_Backup_{DateTime.Now:yyyyMMdd}");
-            var p = new System.Diagnostics.Process
+            string args = $"/Online /Export-Driver /Destination:\"{path}\"";
+            var (exit, output) = await ProcessRunner.RunCaptureAsync("DISM.exe", args, cancellationToken)
+                .ConfigureAwait(false);
+            if (exit != 0)
             {
-                StartInfo = new("DISM.exe", $"/Online /Export-Driver /Destination:\"{path}\"")
-                    { UseShellExecute = true }
-            };
-            p.Start(); p.WaitForExit();
+                string detail = string.IsNullOrWhiteSpace(output) ? "(nessun output)" : output.Trim();
+                throw new InvalidOperationException($"DISM terminato con codice {exit}. {detail}");
+            }
+
             Log?.Invoke($"Backup driver: {path}", "ok");
             return path;
         }
