@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace SysSuite.Core
 {
@@ -44,6 +45,8 @@ namespace SysSuite.Core
             using var p = NewHiddenProcess(fileName, arguments);
             p.Start();
             await p.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            if (p.ExitCode != 0)
+                Log.Warning("Processo terminato con codice {ExitCode}: {FileName} {Arguments}", p.ExitCode, fileName, arguments);
         }
 
         /// <summary>Versione asincrona di <see cref="RunVisible"/>.</summary>
@@ -65,7 +68,10 @@ namespace SysSuite.Core
             Task<string> stderrTask = p.StandardError.ReadToEndAsync(cancellationToken);
             Task exitTask = p.WaitForExitAsync(cancellationToken);
             await Task.WhenAll(stdoutTask, stderrTask, exitTask).ConfigureAwait(false);
-            return (p.ExitCode, await stdoutTask.ConfigureAwait(false));
+            int exit = p.ExitCode;
+            if (exit != 0)
+                Log.Warning("Processo terminato con codice {ExitCode}: {FileName} {Arguments}", exit, fileName, arguments);
+            return (exit, await stdoutTask.ConfigureAwait(false));
         }
 
         private static Process NewHiddenProcess(string fileName, string arguments) =>

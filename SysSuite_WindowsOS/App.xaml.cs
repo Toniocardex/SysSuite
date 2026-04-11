@@ -1,6 +1,9 @@
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Serilog;
 using SysSuite.Core;
 
 namespace SysSuite
@@ -11,18 +14,85 @@ namespace SysSuite
 
         public App()
         {
+            ConfigureLogging();
+            UnhandledException += OnUnhandledException;
             InitializeComponent();
+        }
+
+        private static void ConfigureLogging()
+        {
+            string logDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SysSuite", "Logs");
+            Directory.CreateDirectory(logDir);
+            string logPath = Path.Combine(logDir, "SysSuite_Log.txt");
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.File(
+                    logPath,
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 14,
+                    shared: true)
+                .CreateLogger();
+
+            Log.Information("SysSuite One — logging avviato (cartella: {LogDir})", logDir);
+        }
+
+        private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            try
+            {
+                if (e.Exception is Exception ex)
+                    Log.Fatal(ex, "Eccezione non gestita: {Message}\n{StackTrace}", ex.Message, ex.StackTrace ?? "");
+                else
+                    Log.Fatal("Eccezione non gestita: {Message}", e.Message);
+            }
+            catch { }
+
+            try { e.Handled = true; }
+            catch { }
+
+            try
+            {
+                DispatcherQueue? dq = DispatcherQueue.GetForCurrentThread();
+                if (dq == null) return;
+                dq.TryEnqueue(() => _ = ShowUnhandledExceptionDialogAsync());
+            }
+            catch { }
+        }
+
+        private async Task ShowUnhandledExceptionDialogAsync()
+        {
+            try
+            {
+                Microsoft.UI.Xaml.XamlRoot? xamlRoot = null;
+                if (_window?.Content is FrameworkElement fe)
+                    xamlRoot = fe.XamlRoot;
+                else if (MainWindow.Instance?.Content is FrameworkElement fe2)
+                    xamlRoot = fe2.XamlRoot;
+
+                if (xamlRoot == null) return;
+
+                var dlg = new ContentDialog
+                {
+                    Title = "SysSuite One",
+                    Content = "Si è verificato un errore imprevisto. I dettagli sono stati salvati nei log dell'applicazione.",
+                    CloseButtonText = "OK",
+                    XamlRoot = xamlRoot
+                };
+                await dlg.ShowAsync();
+            }
+            catch { }
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            // Inizializza LiveCharts2 con tema scuro coerente con la palette dell'app
             LiveCharts.Configure(config => config
                 .AddSkiaSharp()
                 .AddDefaultMappers()
                 .AddDarkTheme());
 
-            // Modalità headless: --boost esegue pulizia rapida e termina
             var cmdArgs = Environment.GetCommandLineArgs();
             if (cmdArgs.Any(a => a.Equals("--boost", StringComparison.OrdinalIgnoreCase)))
             {
@@ -35,7 +105,8 @@ namespace SysSuite
                     foreach (var b in browser.DetectBrowsers().Where(b => b.Installed))
                         try { browser.CleanCache(b); } catch { }
                 }
-                catch { }
+                catch (Exception ex) { Log.Warning(ex, "Modalità --boost: errore durante la pulizia"); }
+                finally { Log.CloseAndFlush(); }
                 Exit();
                 return;
             }

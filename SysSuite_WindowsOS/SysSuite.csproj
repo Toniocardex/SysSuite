@@ -78,6 +78,9 @@
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
     <!-- LiveCharts2: grafici professionali (donut, line, area) per WinUI 3 -->
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WinUI" Version="2.0.0-rc4.5" />
+    <!-- Logging strutturato su file (rotazione giornaliera) -->
+    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
   <!-- XAML inclusi automaticamente da SDK e WinUI: non ripetere Page qui (NETSDK1022) -->

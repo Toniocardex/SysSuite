@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Microsoft.Win32;
 using SysSuite.Models;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysSuite.Services
 {
@@ -12,6 +14,22 @@ namespace SysSuite.Services
         // Contatori CPU per processo — campionamento a due tick
         private readonly Dictionary<int, System.Diagnostics.PerformanceCounter> _cpuCounters = new();
         private readonly object _counterLock = new();
+        private readonly SemaphoreSlim _processReadGate = new(1, 1);
+
+        /// <summary>Legge processi e contatori CPU su thread pool (non blocca la UI).</summary>
+        public async Task<List<ProcessEntry>> GetProcessesAsync(string? filter = null,
+            CancellationToken cancellationToken = default)
+        {
+            await _processReadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await Task.Run(() => GetProcesses(filter), cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _processReadGate.Release();
+            }
+        }
 
         public List<ProcessEntry> GetProcesses(string? filter = null)
         {

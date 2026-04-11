@@ -1,6 +1,17 @@
 # SysSuite One — Roadmap
 
-## Versione attuale: v1.3.0
+## Versione attuale: v1.4.0
+
+---
+
+## ✅ v1.4.0 — Sicurezza Livello 1 (Logging & Anti-Crash) — Completato
+
+- [x] Serilog + Serilog.Sinks.File in `SysSuite.csproj`
+- [x] `ConfigureLogging()` in `App.xaml.cs`: file in `%LocalAppData%\SysSuite\Logs\SysSuite_Log.txt` con `RollingInterval.Day` (14 file conservati)
+- [x] `Application.UnhandledException`: log `Fatal` con messaggio e stack trace, `Handled = true` dove possibile
+- [x] `ContentDialog` amichevole sulla UI via `DispatcherQueue.TryEnqueue` dopo errore non gestito
+- [x] `ProcessRunner.RunAsync` / `RunCaptureAsync`: log `Warning` se `ExitCode != 0` (processo e codice)
+- [x] Modalità `--boost`: errori loggati e `Log.CloseAndFlush()` prima dell'uscita
 
 ---
 
@@ -60,8 +71,8 @@
       Pulisce temp, miniature, cache browser, chiude processi non rispondenti.
       Progress bar + contatore MB liberati + toast al completamento.
 - [x] Grafico CPU/RAM in MonitorPage
-      Canvas WinUI 3 con ultimi 60 punti, aggiornato ogni 4s.
-      Legenda colori, linee smooth, griglia di riferimento.
+      LiveCharts2 CartesianChart con ultimi 60 punti; aggiornamento ogni 2s.
+      Smart merge lista processi + WMI RAM su thread pool (niente freeze UI).
 
 ---
 
