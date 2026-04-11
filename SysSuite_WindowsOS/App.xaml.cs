@@ -36,6 +36,8 @@ namespace SysSuite
             services.AddSingleton<BrowserService>();
             services.AddSingleton<DiskAnalyzer>();
             services.AddSingleton<CleanupService>();
+            services.AddSingleton<RamOptimizerService>();
+            services.AddTransient<SystemInfo>();
             services.AddTransient<DiscoViewModel>();
             services.AddTransient<BatteryViewModel>();
             services.AddTransient<NetworkViewModel>();
@@ -51,6 +53,15 @@ namespace SysSuite
                     ?? throw new InvalidOperationException(
                         "MonitorViewModel: risolvere sul thread UI (DispatcherQueue)."),
                 sp.GetRequiredService<ProcessManager>()));
+            services.AddTransient(sp => new HubViewModel(
+                DispatcherQueue.GetForCurrentThread()
+                    ?? throw new InvalidOperationException(
+                        "HubViewModel: risolvere sul thread UI (DispatcherQueue)."),
+                sp.GetRequiredService<SystemInfo>(),
+                sp.GetRequiredService<CleanupService>(),
+                sp.GetRequiredService<BrowserService>(),
+                sp.GetRequiredService<ProcessManager>(),
+                sp.GetRequiredService<RamOptimizerService>()));
             Services = services.BuildServiceProvider();
         }
 

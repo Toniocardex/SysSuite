@@ -10,7 +10,7 @@
             <!-- Titolo -->
             <StackPanel Spacing="4">
                 <TextBlock Text="Dashboard" Style="{StaticResource SysHeading1}"/>
-                <TextBlock x:Name="TxtSub" Text="Caricamento informazioni sistema..."
+                <TextBlock Text="{Binding SubtitleText, Mode=OneWay}"
                     Style="{StaticResource SysBodyText}"/>
             </StackPanel>
 
@@ -26,10 +26,10 @@
                 <Border Grid.Column="0" Style="{StaticResource SysCard}" Margin="0,0,10,0">
                     <StackPanel Spacing="6">
                         <TextBlock Text="PROCESSORE" Style="{StaticResource SysHeading3}"/>
-                        <TextBlock x:Name="TxtCPUName" Text="—" FontFamily="Consolas"
+                        <TextBlock Text="{Binding CpuNameText, Mode=OneWay}" FontFamily="Consolas"
                             FontSize="12" Foreground="#00D4A0" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="TxtCPUCores" Text="—" Style="{StaticResource SysCaption}"/>
-                        <TextBlock x:Name="TxtCPUFreq"  Text="—" Style="{StaticResource SysCaption}"/>
+                        <TextBlock Text="{Binding CpuCoresText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
+                        <TextBlock Text="{Binding CpuFreqText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
                     </StackPanel>
                 </Border>
 
@@ -40,15 +40,16 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <lvc:PieChart x:Name="ChartRAM" Grid.Column="0"
+                        <lvc:PieChart Grid.Column="0"
+                            Series="{Binding RamDonutSeries, Mode=OneWay}"
                             Width="80" Height="80" InitialRotation="-90" MaxAngle="360"
                             LegendPosition="Hidden" TooltipPosition="Hidden"/>
                         <StackPanel Grid.Column="1" Spacing="4" Margin="12,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="MEMORIA RAM" Style="{StaticResource SysHeading3}"/>
-                            <TextBlock x:Name="TxtRAMUsed" Text="—"
+                            <TextBlock Text="{Binding RamUsedPercentText, Mode=OneWay}"
                                 FontFamily="Consolas" FontSize="22" FontWeight="Bold" Foreground="#3B9EFF"/>
-                            <TextBlock x:Name="TxtRAMDetail" Text="—" Style="{StaticResource SysCaption}"/>
-                            <TextBlock x:Name="TxtRAMCommercial" Text="—"
+                            <TextBlock Text="{Binding RamDetailText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
+                            <TextBlock Text="{Binding RamCommercialText, Mode=OneWay}"
                                 FontFamily="Consolas" FontSize="11" Foreground="#3B9EFF"/>
                         </StackPanel>
                     </Grid>
@@ -61,14 +62,15 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <lvc:PieChart x:Name="ChartDisk" Grid.Column="0"
+                        <lvc:PieChart Grid.Column="0"
+                            Series="{Binding DiskDonutSeries, Mode=OneWay}"
                             Width="80" Height="80" InitialRotation="-90" MaxAngle="360"
                             LegendPosition="Hidden" TooltipPosition="Hidden"/>
                         <StackPanel Grid.Column="1" Spacing="4" Margin="12,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="DISCO SISTEMA" Style="{StaticResource SysHeading3}"/>
-                            <TextBlock x:Name="TxtDiskFree" Text="—"
+                            <TextBlock Text="{Binding DiskFreeText, Mode=OneWay}"
                                 FontFamily="Consolas" FontSize="22" FontWeight="Bold" Foreground="#FFB547"/>
-                            <TextBlock x:Name="TxtDiskTotal" Text="—" Style="{StaticResource SysCaption}"/>
+                            <TextBlock Text="{Binding DiskTotalText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -85,17 +87,17 @@
                 <Border Grid.Column="0" Style="{StaticResource SysCard}" Margin="0,0,10,0">
                     <StackPanel Spacing="6">
                         <TextBlock Text="SISTEMA" Style="{StaticResource SysHeading3}"/>
-                        <TextBlock x:Name="TxtOS" Text="—" FontFamily="Consolas"
+                        <TextBlock Text="{Binding OsNameText, Mode=OneWay}" FontFamily="Consolas"
                             FontSize="13" FontWeight="SemiBold" Foreground="#ECF0F8" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="TxtOSVersion" Text="—" Style="{StaticResource SysCaption}"/>
+                        <TextBlock Text="{Binding OsVersionText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
                         <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,4,0,0">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="UPTIME" Style="{StaticResource SysHeading3}"/>
-                                <TextBlock x:Name="TxtUptime" Text="—" Style="{StaticResource SysCaption}"/>
+                                <TextBlock Text="{Binding UptimeText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
                             </StackPanel>
                             <StackPanel Spacing="2">
                                 <TextBlock Text="IP LOCALE" Style="{StaticResource SysHeading3}"/>
-                                <TextBlock x:Name="TxtIP" Text="—"
+                                <TextBlock Text="{Binding LocalIpText, Mode=OneWay}"
                                     FontFamily="Consolas" FontSize="11" Foreground="#00D4A0"/>
                             </StackPanel>
                         </StackPanel>
@@ -106,12 +108,54 @@
                 <Border Grid.Column="1" Style="{StaticResource SysCard}">
                     <StackPanel Spacing="6">
                         <TextBlock Text="SCHEDA VIDEO" Style="{StaticResource SysHeading3}"/>
-                        <TextBlock x:Name="TxtGPUName" Text="—" FontFamily="Consolas"
+                        <TextBlock Text="{Binding GpuNameText, Mode=OneWay}" FontFamily="Consolas"
                             FontSize="12" Foreground="#A78BFA" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="TxtGPUVRAM" Text="—" Style="{StaticResource SysCaption}"/>
+                        <TextBlock Text="{Binding GpuVramText, Mode=OneWay}" Style="{StaticResource SysCaption}"/>
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <!-- Identità hardware (WMI) -->
+            <Border Style="{StaticResource SysCard}" BorderBrush="#2D3A55" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="&#xE9F9;" FontFamily="Segoe Fluent Icons" FontSize="20" Foreground="#00D4A0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Hardware Snapshot" Style="{StaticResource SysHeading2}"/>
+                    </StackPanel>
+                    <TextBlock Text="Identità del sistema — dati da WMI (moduli RAM, disco di boot, video, scheda madre)."
+                        Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
+                    <Grid ColumnSpacing="16" RowSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="RAM (fisica)" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock Text="{Binding RamDetails, Mode=OneWay}" FontFamily="Consolas" FontSize="12"
+                                Foreground="#3B9EFF" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                            <TextBlock Text="DISCO (modello)" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock Text="{Binding SystemDiskModel, Mode=OneWay}" FontFamily="Consolas" FontSize="12"
+                                Foreground="#FFB547" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="DISPLAY" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock Text="{Binding DisplayDetails, Mode=OneWay}" FontFamily="Consolas" FontSize="12"
+                                Foreground="#A78BFA" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                            <TextBlock Text="MOTHERBOARD" Style="{StaticResource SysHeading3}"/>
+                            <TextBlock Text="{Binding MotherboardModel, Mode=OneWay}" FontFamily="Consolas" FontSize="12"
+                                Foreground="#ECF0F8" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
 
             <!-- Azioni rapide: Boost + RAM Optimizer affiancati -->
             <Grid>
@@ -137,15 +181,20 @@
                             <TextBlock Text="Temp, miniature, cache browser, processi bloccati."
                                 Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                <ProgressBar x:Name="PbBoost" Style="{StaticResource SysProgressBar}"
-                                    Width="160" IsIndeterminate="False" Visibility="Collapsed"/>
-                                <TextBlock x:Name="TxtBoostResult" Text=""
+                                <ProgressBar Style="{StaticResource SysProgressBar}"
+                                    Width="160" Minimum="0" Maximum="100"
+                                    Visibility="{Binding BoostProgressVisibility, Mode=OneWay}"
+                                    IsIndeterminate="{Binding BoostProgressIndeterminate, Mode=OneWay}"
+                                    Value="{Binding BoostProgressValue, Mode=OneWay}"/>
+                                <TextBlock Text="{Binding BoostResultText, Mode=OneWay}"
                                     Style="{StaticResource SysAccentText}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
-                        <Button Grid.Column="1" x:Name="BtnBoost" Content="BOOST"
+                        <Button Grid.Column="1" Content="BOOST"
                             Style="{StaticResource SysButtonPrimary}" FontSize="14"
-                            Padding="22,12" Click="BtnBoost_Click" VerticalAlignment="Center"/>
+                            Padding="22,12" VerticalAlignment="Center"
+                            Command="{Binding RunOneClickBoostCommand}"
+                            IsEnabled="{Binding IsOneClickBoostEnabled, Mode=OneWay}"/>
                     </Grid>
                 </Border>
 
@@ -163,19 +212,23 @@
                                     FontSize="18" Foreground="#3B9EFF" VerticalAlignment="Center"/>
                                 <TextBlock Text="RAM Optimizer" Style="{StaticResource SysHeading2}"/>
                             </StackPanel>
-                            <TextBlock x:Name="TxtRamStatus" Text="Caricamento..."
+                            <TextBlock Text="{Binding RamOptimizerStatusText, Mode=OneWay}"
                                 Style="{StaticResource SysCaption}"/>
                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                <ProgressBar x:Name="PbRamOpt" Style="{StaticResource SysProgressBar}"
-                                    Width="160" IsIndeterminate="True" Visibility="Collapsed"/>
-                                <TextBlock x:Name="TxtRamResult" Text=""
+                                <ProgressBar Style="{StaticResource SysProgressBar}"
+                                    Width="160"
+                                    Visibility="{Binding RamOptimizerProgressVisibility, Mode=OneWay}"
+                                    IsIndeterminate="{Binding RamOptimizerProgressIndeterminate, Mode=OneWay}"/>
+                                <TextBlock Text="{Binding RamOptimizerResultText, Mode=OneWay}"
                                     FontFamily="Consolas" FontSize="11" Foreground="#3B9EFF"
                                     VerticalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
-                        <Button Grid.Column="1" x:Name="BtnRamOpt" Content="OTTIMIZZA"
+                        <Button Grid.Column="1" Content="OTTIMIZZA"
                             Style="{StaticResource SysButtonSecondary}" FontSize="12"
-                            Padding="16,12" Click="BtnRamOpt_Click" VerticalAlignment="Center"/>
+                            Padding="16,12" VerticalAlignment="Center"
+                            Command="{Binding RunRamOptimizerCommand}"
+                            IsEnabled="{Binding IsRamOptimizerButtonEnabled, Mode=OneWay}"/>
                     </Grid>
                 </Border>
             </Grid>
@@ -191,7 +244,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0" Tag="MainSuite" Click="ModuleCard_Click"
+                <Button Grid.Column="0" Command="{Binding NavigateToModuleCommand}" CommandParameter="MainSuite"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -204,7 +257,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="1" Tag="Monitor" Click="ModuleCard_Click"
+                <Button Grid.Column="1" Command="{Binding NavigateToModuleCommand}" CommandParameter="Monitor"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -217,7 +270,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="2" Tag="Disco" Click="ModuleCard_Click"
+                <Button Grid.Column="2" Command="{Binding NavigateToModuleCommand}" CommandParameter="Disco"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -230,7 +283,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="3" Tag="Gaming" Click="ModuleCard_Click"
+                <Button Grid.Column="3" Command="{Binding NavigateToModuleCommand}" CommandParameter="Gaming"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,10"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -243,7 +296,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="4" Tag="AppManager" Click="ModuleCard_Click"
+                <Button Grid.Column="4" Command="{Binding NavigateToModuleCommand}" CommandParameter="AppManager"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,0,10"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -265,7 +318,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0" Tag="Network" Click="ModuleCard_Click"
+                <Button Grid.Column="0" Command="{Binding NavigateToModuleCommand}" CommandParameter="Network"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -278,7 +331,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="1" Tag="Driver" Click="ModuleCard_Click"
+                <Button Grid.Column="1" Command="{Binding NavigateToModuleCommand}" CommandParameter="Driver"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -291,7 +344,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="2" Tag="Battery" Click="ModuleCard_Click"
+                <Button Grid.Column="2" Command="{Binding NavigateToModuleCommand}" CommandParameter="Battery"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -304,7 +357,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="3" Tag="Browser" Click="ModuleCard_Click"
+                <Button Grid.Column="3" Command="{Binding NavigateToModuleCommand}" CommandParameter="Browser"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,10,0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
@@ -317,7 +370,7 @@
                     </Border>
                 </Button>
 
-                <Button Grid.Column="4" Tag="Registry" Click="ModuleCard_Click"
+                <Button Grid.Column="4" Command="{Binding NavigateToModuleCommand}" CommandParameter="Registry"
                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,0,0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <Border Style="{StaticResource SysCard}" HorizontalAlignment="Stretch" MinHeight="120">
