@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using SysSuite.Core;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,33 +7,110 @@ namespace SysSuite.Services
 {
     /// <summary>
     /// Telemetria, Cortana, cronologia, pubblicità, privacy OS.
-    /// Non avvia processi esterni: solo scritture su registro. Le API *Async eseguono le mutazioni
-    /// su thread pool così la UI resta reattiva (HKLM può essere lento sotto carico).
+    /// Blocco telemetria a tre livelli: criteri di gruppo (AllowTelemetry), servizi DiagTrack / dmwappushservice,
+    /// attività pianificate CEIP. Le API *Async eseguono il lavoro pesante senza bloccare la UI.
     /// </summary>
     public class PrivacyService
     {
         public event Action<string, string>? Log;
 
-        // ── Telemetria ──────────────────────────────────────
+        // ── Telemetria (triple kill-switch) ─────────────────
         public bool IsTelemetryDisabled() =>
             ReadReg(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry") is int v && v == 0;
 
         public void SetTelemetry(bool enabled)
         {
-            ApplyTelemetry(enabled);
+            ApplyTelemetryFullAsync(enabled, default).GetAwaiter().GetResult();
             Emit(enabled ? "Telemetria riabilitata" : "Telemetria disabilitata", "ok");
         }
 
         public async Task SetTelemetryAsync(bool enabled, CancellationToken cancellationToken = default)
         {
-            await Task.Run(() => ApplyTelemetry(enabled), cancellationToken).ConfigureAwait(false);
+            await Task.Run(() => ApplyTelemetryFullAsync(enabled, cancellationToken), cancellationToken)
+                .ConfigureAwait(false);
             Emit(enabled ? "Telemetria riabilitata" : "Telemetria disabilitata", "ok");
         }
 
-        private static void ApplyTelemetry(bool enabled) =>
+        /// <summary>
+        /// 1) AllowTelemetry (0 off, 3 on), 2) sc stop/config servizi telemetria, 3) schtasks CEIP.
+        /// Ogni passo è isolato: errori → Serilog e si prosegue.
+        /// </summary>
+        private static async Task ApplyTelemetryFullAsync(bool enabled, CancellationToken cancellationToken)
+        {
+            try
+            {
+                ApplyTelemetryRegistry(enabled);
+            }
+            catch (Exception ex)
+            {
+                global::Serilog.Log.Warning(ex, "Telemetria: impostazione registro AllowTelemetry non riuscita");
+            }
+
+            await ApplyTelemetryServicesAsync(enabled, cancellationToken).ConfigureAwait(false);
+            await ApplyTelemetryScheduledTasksAsync(enabled, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static void ApplyTelemetryRegistry(bool enabled) =>
             SetReg(Registry.LocalMachine,
                 @"SOFTWARE\Policies\Microsoft\Windows\DataCollection",
-                "AllowTelemetry", enabled ? 1 : 0);
+                "AllowTelemetry", enabled ? 3 : 0);
+
+        private static async Task ApplyTelemetryServicesAsync(bool enabled, CancellationToken cancellationToken)
+        {
+            if (enabled)
+            {
+                await TryTelemetryProcessAsync("sc.exe", "config DiagTrack start= auto", cancellationToken,
+                    "DiagTrack config auto").ConfigureAwait(false);
+                await TryTelemetryProcessAsync("sc.exe", "start DiagTrack", cancellationToken,
+                    "DiagTrack start").ConfigureAwait(false);
+                await TryTelemetryProcessAsync("sc.exe", "config dmwappushservice start= auto", cancellationToken,
+                    "dmwappushservice config auto").ConfigureAwait(false);
+                await TryTelemetryProcessAsync("sc.exe", "start dmwappushservice", cancellationToken,
+                    "dmwappushservice start").ConfigureAwait(false);
+            }
+            else
+            {
+                await TryTelemetryProcessAsync("sc.exe", "config DiagTrack start= disabled", cancellationToken,
+                    "DiagTrack config disabled").ConfigureAwait(false);
+                await TryTelemetryProcessAsync("sc.exe", "stop DiagTrack", cancellationToken,
+                    "DiagTrack stop").ConfigureAwait(false);
+                await TryTelemetryProcessAsync("sc.exe", "config dmwappushservice start= disabled", cancellationToken,
+                    "dmwappushservice config disabled").ConfigureAwait(false);
+                await TryTelemetryProcessAsync("sc.exe", "stop dmwappushservice", cancellationToken,
+                    "dmwappushservice stop").ConfigureAwait(false);
+            }
+        }
+
+        private static async Task ApplyTelemetryScheduledTasksAsync(bool enabled, CancellationToken cancellationToken)
+        {
+            string flag = enabled ? "/enable" : "/disable";
+            string[] taskPaths =
+            {
+                @"\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser",
+                @"\Microsoft\Windows\Customer Experience Improvement Program\Consolidator"
+            };
+
+            foreach (var tn in taskPaths)
+            {
+                string args = "/change /tn \"" + tn + "\" " + flag;
+                await TryTelemetryProcessAsync("schtasks.exe", args, cancellationToken,
+                    "Attività pianificata " + tn).ConfigureAwait(false);
+            }
+        }
+
+        private static async Task TryTelemetryProcessAsync(string fileName, string arguments,
+            CancellationToken cancellationToken, string stepDescription)
+        {
+            try
+            {
+                await ProcessRunner.RunAsync(fileName, arguments, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                global::Serilog.Log.Warning(ex, "Telemetria: passo non riuscito ({Step}): {File} {Args}", stepDescription,
+                    fileName, arguments);
+            }
+        }
 
         // ── ID Pubblicità ───────────────────────────────────
         public bool IsAdvertisingIdDisabled() =>
