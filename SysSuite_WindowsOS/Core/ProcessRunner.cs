@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysSuite.Core
 {
@@ -11,14 +13,7 @@ namespace SysSuite.Core
         /// <summary>Esegue un processo in background, attende la fine, nessuna finestra.</summary>
         public static void Run(string fileName, string arguments)
         {
-            var p = new Process
-            {
-                StartInfo = new ProcessStartInfo(fileName, arguments)
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                }
-            };
+            using var p = NewHiddenProcess(fileName, arguments);
             p.Start();
             p.WaitForExit();
         }
@@ -26,13 +21,7 @@ namespace SysSuite.Core
         /// <summary>Esegue un processo visibile (es. SFC, DISM che mostrano progressi).</summary>
         public static void RunVisible(string fileName, string arguments)
         {
-            var p = new Process
-            {
-                StartInfo = new ProcessStartInfo(fileName, arguments)
-                {
-                    UseShellExecute = true
-                }
-            };
+            using var p = NewVisibleProcess(fileName, arguments);
             p.Start();
             p.WaitForExit();
         }
@@ -40,7 +29,66 @@ namespace SysSuite.Core
         /// <summary>Esegue e cattura l'output standard.</summary>
         public static (int ExitCode, string Output) RunCapture(string fileName, string arguments)
         {
-            var p = new Process
+            using var p = NewCaptureProcess(fileName, arguments);
+            p.Start();
+            string output = p.StandardOutput.ReadToEnd();
+            string _ = p.StandardError.ReadToEnd();
+            p.WaitForExit();
+            return (p.ExitCode, output);
+        }
+
+        /// <summary>Versione asincrona di <see cref="Run"/> — non blocca il thread UI.</summary>
+        public static async Task RunAsync(string fileName, string arguments,
+            CancellationToken cancellationToken = default)
+        {
+            using var p = NewHiddenProcess(fileName, arguments);
+            p.Start();
+            await p.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>Versione asincrona di <see cref="RunVisible"/>.</summary>
+        public static async Task RunVisibleAsync(string fileName, string arguments,
+            CancellationToken cancellationToken = default)
+        {
+            using var p = NewVisibleProcess(fileName, arguments);
+            p.Start();
+            await p.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>Versione asincrona di <see cref="RunCapture"/> — legge stdout/stderr in parallelo per evitare deadlock su buffer pieni.</summary>
+        public static async Task<(int ExitCode, string Output)> RunCaptureAsync(string fileName, string arguments,
+            CancellationToken cancellationToken = default)
+        {
+            using var p = NewCaptureProcess(fileName, arguments);
+            p.Start();
+            Task<string> stdoutTask = p.StandardOutput.ReadToEndAsync(cancellationToken);
+            Task<string> stderrTask = p.StandardError.ReadToEndAsync(cancellationToken);
+            Task exitTask = p.WaitForExitAsync(cancellationToken);
+            await Task.WhenAll(stdoutTask, stderrTask, exitTask).ConfigureAwait(false);
+            return (p.ExitCode, await stdoutTask.ConfigureAwait(false));
+        }
+
+        private static Process NewHiddenProcess(string fileName, string arguments) =>
+            new()
+            {
+                StartInfo = new ProcessStartInfo(fileName, arguments)
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                }
+            };
+
+        private static Process NewVisibleProcess(string fileName, string arguments) =>
+            new()
+            {
+                StartInfo = new ProcessStartInfo(fileName, arguments)
+                {
+                    UseShellExecute = true
+                }
+            };
+
+        private static Process NewCaptureProcess(string fileName, string arguments) =>
+            new()
             {
                 StartInfo = new ProcessStartInfo(fileName, arguments)
                 {
@@ -50,10 +98,5 @@ namespace SysSuite.Core
                     RedirectStandardError = true
                 }
             };
-            p.Start();
-            string output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit();
-            return (p.ExitCode, output);
-        }
     }
 }

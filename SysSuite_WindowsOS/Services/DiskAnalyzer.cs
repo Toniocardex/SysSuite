@@ -1,4 +1,6 @@
 using System.Management;
+using System.Threading;
+using System.Threading.Tasks;
 using SysSuite.Models;
 
 namespace SysSuite.Services
@@ -43,6 +45,10 @@ namespace SysSuite.Services
             return results.OrderByDescending(d => d.SizeBytes).Take(100).ToList();
         }
 
+        public Task<List<DiskEntry>> GetHeavyFoldersAsync(string root, int depth = 2,
+            IProgress<string>? progress = null, CancellationToken cancellationToken = default) =>
+            Task.Run(() => GetHeavyFolders(root, depth, progress), cancellationToken);
+
         public List<DiskEntry> GetLargeFiles(string root, long minBytes = 100 * 1024 * 1024,
             IProgress<string>? progress = null)
         {
@@ -71,6 +77,10 @@ namespace SysSuite.Services
 
             return results.OrderByDescending(d => d.SizeBytes).Take(200).ToList();
         }
+
+        public Task<List<DiskEntry>> GetLargeFilesAsync(string root, long minBytes = 100 * 1024 * 1024,
+            IProgress<string>? progress = null, CancellationToken cancellationToken = default) =>
+            Task.Run(() => GetLargeFiles(root, minBytes, progress), cancellationToken);
 
         public List<SmartData> GetSmartData()
         {
@@ -112,5 +122,8 @@ namespace SysSuite.Services
             catch (Exception ex) { Log?.Invoke($"SMART: {ex.Message}", "err"); }
             return result;
         }
+
+        public Task<List<SmartData>> GetSmartDataAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(GetSmartData, cancellationToken);
     }
 }

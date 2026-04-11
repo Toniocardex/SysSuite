@@ -33,6 +33,7 @@
                         Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <ProgressRing x:Name="BusyRing" Width="32" Height="32" IsActive="True" Visibility="Collapsed"/>
                     <Button x:Name="BtnActivate" Content="ATTIVA" Style="{StaticResource SysButtonPrimary}" Click="BtnActivate_Click" MinWidth="120"
                         ToolTipService.ToolTip="Attiva piano Ultimate Performance, HAGS, disabilita Nagle, ferma servizi Xbox e aggiornamenti. Richiede admin."/>
                     <Button x:Name="BtnDeactivate" Content="DISATTIVA" Style="{StaticResource SysButtonSecondary}" Click="BtnDeactivate_Click" MinWidth="120" IsEnabled="False"

@@ -1,5 +1,7 @@
 using SysSuite.Core;
 using Microsoft.Win32;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysSuite.Services
 {
@@ -11,33 +13,29 @@ namespace SysSuite.Services
         private const string BalancedGuid  = "381b4222-f694-41f0-9685-ff5bb260df2e";
         private const string UltimateGuid  = "e9a42b02-d5df-448d-aa00-03f14749eb61";
 
-        public void SetBalancedPlan()
+        public async Task SetBalancedPlanAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("powercfg.exe", $"/setactive {BalancedGuid}");
+            await ProcessRunner.RunAsync("powercfg.exe", $"/setactive {BalancedGuid}", cancellationToken).ConfigureAwait(false);
             Emit("Piano bilanciato attivato", "ok");
         }
 
-        public void SetUltimatePlan()
+        public async Task SetUltimatePlanAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("powercfg.exe", $"/duplicatescheme {UltimateGuid}");
-            ProcessRunner.Run("powercfg.exe", $"/setactive {UltimateGuid}");
+            await ProcessRunner.RunAsync("powercfg.exe", $"/duplicatescheme {UltimateGuid}", cancellationToken).ConfigureAwait(false);
+            await ProcessRunner.RunAsync("powercfg.exe", $"/setactive {UltimateGuid}", cancellationToken).ConfigureAwait(false);
             Emit("Piano Ultimate Performance attivato", "ok");
         }
 
         public string GetCurrentPlan()
         {
-            var p = new System.Diagnostics.Process
-            {
-                StartInfo = new("powercfg.exe", "/getactivescheme")
-                {
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow  = true
-                }
-            };
-            p.Start();
-            string output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit();
+            var (_, output) = ProcessRunner.RunCapture("powercfg.exe", "/getactivescheme");
+            var m = System.Text.RegularExpressions.Regex.Match(output, @"\((.+)\)");
+            return m.Success ? m.Groups[1].Value : "Sconosciuto";
+        }
+
+        public async Task<string> GetCurrentPlanAsync(CancellationToken cancellationToken = default)
+        {
+            var (_, output) = await ProcessRunner.RunCaptureAsync("powercfg.exe", "/getactivescheme", cancellationToken).ConfigureAwait(false);
             var m = System.Text.RegularExpressions.Regex.Match(output, @"\((.+)\)");
             return m.Success ? m.Groups[1].Value : "Sconosciuto";
         }
@@ -67,10 +65,10 @@ namespace SysSuite.Services
             Emit("Avvio rapido abilitato", "ok");
         }
 
-        public void OptimizeDisk(string drive = "C:")
+        public async Task OptimizeDiskAsync(string drive = "C:", CancellationToken cancellationToken = default)
         {
             Emit($"Ottimizzazione disco {drive}...", "head");
-            ProcessRunner.Run("defrag.exe", $"{drive} /O");
+            await ProcessRunner.RunAsync("defrag.exe", $"{drive} /O", cancellationToken).ConfigureAwait(false);
             Emit("Disco ottimizzato", "ok");
         }
 

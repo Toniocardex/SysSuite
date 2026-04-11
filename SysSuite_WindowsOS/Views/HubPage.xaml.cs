@@ -141,54 +141,62 @@ namespace SysSuite.Views
 
             long freedBytes = 0; int killedProcs = 0;
             var boostOpt = SettingsService.Load();
-            await Task.Run(() =>
+            try
             {
-                if (boostOpt.BoostCleanTemp)
-                { try { _clean.CleanTemp(); } catch { } }
-                if (boostOpt.BoostCleanThumbnails)
-                { try { _clean.CleanThumbnails(); } catch { } }
-                if (boostOpt.BoostCleanBrowserCache)
+                await Task.Run(() =>
                 {
-                    try
+                    if (boostOpt.BoostCleanTemp)
+                    { try { _clean.CleanTemp(); } catch { } }
+                    if (boostOpt.BoostCleanThumbnails)
+                    { try { _clean.CleanThumbnails(); } catch { } }
+                    if (boostOpt.BoostCleanBrowserCache)
                     {
-                        foreach (var b in _browser.DetectBrowsers().Where(b => b.Installed))
-                        { freedBytes += _browser.GetCacheSize(b); _browser.CleanCache(b); }
+                        try
+                        {
+                            foreach (var b in _browser.DetectBrowsers().Where(b => b.Installed))
+                            { freedBytes += _browser.GetCacheSize(b); _browser.CleanCache(b); }
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
-                if (boostOpt.BoostKillNotResponding)
+                    if (boostOpt.BoostKillNotResponding)
+                    {
+                        try
+                        {
+                            var stuck = _pm.GetProcesses()
+                                .Where(p => !p.Responding && p.PID != 0
+                                    && !string.IsNullOrEmpty(p.Path)
+                                    && !p.Path.StartsWith(@"C:\Windows", StringComparison.OrdinalIgnoreCase))
+                                .ToList();
+                            foreach (var p in stuck) if (_pm.KillProcess(p.PID)) killedProcs++;
+                        }
+                        catch { }
+                    }
+                });
+
+                PbBoost.IsIndeterminate = false;
+                PbBoost.Value = 100;
+
+                string freedStr = freedBytes >= 1_048_576
+                    ? (freedBytes / 1_048_576) + " MB liberati"
+                    : (freedBytes / 1024) + " KB liberati";
+                string result = freedStr;
+                if (killedProcs > 0) result += " · " + killedProcs + " proc. bloccati chiusi";
+
+                TxtBoostResult.Text = "OK — " + result;
+                SettingsService.Update(s =>
                 {
-                    try
-                    {
-                        var stuck = _pm.GetProcesses()
-                            .Where(p => !p.Responding && p.PID != 0
-                                && !string.IsNullOrEmpty(p.Path)
-                                && !p.Path.StartsWith(@"C:\Windows", StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                        foreach (var p in stuck) if (_pm.KillProcess(p.PID)) killedProcs++;
-                    }
-                    catch { }
-                }
-            });
-
-            PbBoost.IsIndeterminate = false;
-            PbBoost.Value = 100;
-
-            string freedStr = freedBytes >= 1_048_576
-                ? (freedBytes / 1_048_576) + " MB liberati"
-                : (freedBytes / 1024) + " KB liberati";
-            string result = freedStr;
-            if (killedProcs > 0) result += " · " + killedProcs + " proc. bloccati chiusi";
-
-            TxtBoostResult.Text = "OK — " + result;
-            BtnBoost.IsEnabled  = true;
-            SettingsService.Update(s =>
+                    s.LastBoostDate = DateTime.Now;
+                    s.LastBoostMB   = freedBytes / 1_048_576;
+                });
+                ToastHelper.SendSuccess("SysSuite One — Boost completato", result);
+                LoadInfo();
+            }
+            finally
             {
-                s.LastBoostDate = DateTime.Now;
-                s.LastBoostMB   = freedBytes / 1_048_576;
-            });
-            ToastHelper.SendSuccess("SysSuite One — Boost completato", result);
-            LoadInfo();
+                PbBoost.IsIndeterminate = false;
+                PbBoost.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+                BtnBoost.IsEnabled = true;
+            }
         }
         private async void BtnRamOpt_Click(object sender, RoutedEventArgs e)
         {
@@ -224,32 +232,37 @@ namespace SysSuite.Views
             TxtRamStatus.Text   = "Svuoto i working set...";
 
             long freed = 0;
-            await Task.Run(() =>
+            try
             {
-                _ramOpt.Log += (msg, type) =>
-                    DispatcherQueue.TryEnqueue(() =>
-                        TxtRamStatus.Text = msg.Length > 55 ? msg.Substring(0, 55) + "..." : msg);
-                freed = _ramOpt.Optimize();
-            });
+                await Task.Run(() =>
+                {
+                    _ramOpt.Log += (msg, type) =>
+                        DispatcherQueue.TryEnqueue(() =>
+                            TxtRamStatus.Text = msg.Length > 55 ? msg.Substring(0, 55) + "..." : msg);
+                    freed = _ramOpt.Optimize();
+                });
 
-            PbRamOpt.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-            BtnRamOpt.IsEnabled = true;
-            BtnBoost.IsEnabled  = true;
+                if (freed > 0)
+                {
+                    TxtRamResult.Text = "+" + freed + " MB liberati (effetto temporaneo)";
+                    ToastHelper.SendSuccess(
+                        "SysSuite One — RAM Ottimizzata",
+                        freed + " MB di RAM fisica recuperati.");
+                }
+                else
+                {
+                    TxtRamResult.Text = "RAM già ottimizzata";
+                }
 
-            if (freed > 0)
-            {
-                TxtRamResult.Text = "+" + freed + " MB liberati (effetto temporaneo)";
-                ToastHelper.SendSuccess(
-                    "SysSuite One — RAM Ottimizzata",
-                    freed + " MB di RAM fisica recuperati.");
+                await Task.Delay(500);
+                LoadInfo();
             }
-            else
+            finally
             {
-                TxtRamResult.Text = "RAM già ottimizzata";
+                PbRamOpt.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+                BtnRamOpt.IsEnabled = true;
+                BtnBoost.IsEnabled  = true;
             }
-
-            await Task.Delay(500);
-            LoadInfo();
         }
 
     }

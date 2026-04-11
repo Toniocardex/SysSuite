@@ -7,23 +7,23 @@ namespace SysSuite.Services
     {
         public event Action<string,string>? Log;
 
-        public void RunDISM()
+        public async Task RunDISMAsync(CancellationToken cancellationToken = default)
         {
             Emit("Avvio DISM /RestoreHealth...", "head");
-            ProcessRunner.RunVisible("DISM.exe", "/Online /Cleanup-Image /RestoreHealth");
+            await ProcessRunner.RunVisibleAsync("DISM.exe", "/Online /Cleanup-Image /RestoreHealth", cancellationToken).ConfigureAwait(false);
             Emit("DISM completato", "ok");
         }
 
-        public void RunSFC()
+        public async Task RunSFCAsync(CancellationToken cancellationToken = default)
         {
             Emit("Avvio SFC /scannow...", "head");
-            ProcessRunner.RunVisible("sfc.exe", "/scannow");
+            await ProcessRunner.RunVisibleAsync("sfc.exe", "/scannow", cancellationToken).ConfigureAwait(false);
             Emit("SFC completato — log: %windir%\\Logs\\CBS\\CBS.log", "ok");
         }
 
-        public void ScheduleChkDsk()
+        public async Task ScheduleChkDskAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("cmd.exe", "/c echo y | chkdsk C: /f /r /x");
+            await ProcessRunner.RunAsync("cmd.exe", "/c echo y | chkdsk C: /f /r /x", cancellationToken).ConfigureAwait(false);
             Emit("CHKDSK programmato al prossimo avvio", "ok");
         }
 

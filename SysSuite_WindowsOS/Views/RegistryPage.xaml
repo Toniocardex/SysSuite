@@ -31,12 +31,13 @@
         <Border Grid.Row="2" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Content="Scansiona registro" Style="{StaticResource SysButtonPrimary}" Click="BtnScan_Click"
+                    <Button x:Name="BtnScanRegistry" Content="Scansiona registro" Style="{StaticResource SysButtonPrimary}" Click="BtnScan_Click"
                         ToolTipService.ToolTip="Cerca riferimenti a file .dll/.exe non più presenti sul disco. Solo lettura."/>
-                    <Button Content="Backup registro (Desktop)" Style="{StaticResource SysButtonSecondary}" Click="BtnBackup_Click"
+                    <Button x:Name="BtnBackupRegistry" Content="Backup registro (Desktop)" Style="{StaticResource SysButtonSecondary}" Click="BtnBackup_Click"
                         ToolTipService.ToolTip="Esporta HKLM in un file .reg sul Desktop. Richiede admin."/>
-                    <Button Content="Apri Editor del Registro" Style="{StaticResource SysButtonGhost}" Click="BtnOpenRegedit_Click"
+                    <Button x:Name="BtnOpenRegedit" Content="Apri Editor del Registro" Style="{StaticResource SysButtonGhost}" Click="BtnOpenRegedit_Click"
                         ToolTipService.ToolTip="Apre regedit.exe per modifiche manuali avanzate."/>
+                    <ProgressRing x:Name="BusyRing" Width="28" Height="28" IsActive="True" Visibility="Collapsed" VerticalAlignment="Center"/>
                     <ProgressBar x:Name="PbScan" Style="{StaticResource SysProgressBar}" Width="160" VerticalAlignment="Center" Maximum="100" IsIndeterminate="False"/>
                     <TextBlock x:Name="TxtCount" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
                 </StackPanel>

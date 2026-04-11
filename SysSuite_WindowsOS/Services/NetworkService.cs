@@ -2,6 +2,8 @@ using SysSuite.Core;
 using System.Net;
 using System.Net.NetworkInformation;
 using SysSuite.Models;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysSuite.Services
 {
@@ -11,25 +13,26 @@ namespace SysSuite.Services
         public event Action<string,string>? Log;
 
         // ── Ottimizzazione ────────────────────────────────────
-        public void FlushDNS()
+        public async Task FlushDNSAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("ipconfig.exe", "/flushdns");
+            await ProcessRunner.RunAsync("ipconfig.exe", "/flushdns", cancellationToken).ConfigureAwait(false);
             Emit("Cache DNS svuotata", "ok");
         }
 
-        public void ResetTCPIP()
+        public async Task ResetTCPIPAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("netsh.exe", "int ip reset");
+            await ProcessRunner.RunAsync("netsh.exe", "int ip reset", cancellationToken).ConfigureAwait(false);
             Emit("Stack TCP/IP resettato", "ok");
         }
 
-        public void ResetWinsock()
+        public async Task ResetWinsockAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("netsh.exe", "winsock reset");
+            await ProcessRunner.RunAsync("netsh.exe", "winsock reset", cancellationToken).ConfigureAwait(false);
             Emit("Winsock resettato", "ok");
         }
 
-        public void SetDNS(string primary, string secondary, string label)
+        public async Task SetDNSAsync(string primary, string secondary, string label,
+            CancellationToken cancellationToken = default)
         {
             bool isDHCP = string.IsNullOrEmpty(primary) || label == "DHCP";
 
@@ -39,14 +42,16 @@ namespace SysSuite.Services
             {
                 if (isDHCP)
                 {
-                    // Ripristina DNS automatico via DHCP
-                    ProcessRunner.Run("netsh.exe", $"interface ip set dns \"{nic.Name}\" dhcp");
+                    await ProcessRunner.RunAsync("netsh.exe", $"interface ip set dns \"{nic.Name}\" dhcp", cancellationToken)
+                        .ConfigureAwait(false);
                 }
                 else
                 {
-                    ProcessRunner.Run("netsh.exe", $"interface ip set dns \"{nic.Name}\" static {primary}");
+                    await ProcessRunner.RunAsync("netsh.exe", $"interface ip set dns \"{nic.Name}\" static {primary}", cancellationToken)
+                        .ConfigureAwait(false);
                     if (!string.IsNullOrEmpty(secondary))
-                        ProcessRunner.Run("netsh.exe", $"interface ip add dns \"{nic.Name}\" {secondary} index=2");
+                        await ProcessRunner.RunAsync("netsh.exe", $"interface ip add dns \"{nic.Name}\" {secondary} index=2", cancellationToken)
+                            .ConfigureAwait(false);
                 }
             }
             Emit(isDHCP ? "DNS ripristinato automatico (DHCP)" : $"DNS {label} impostato ({primary})", "ok");

@@ -72,19 +72,23 @@
         <!-- Azioni rapide DNS / TCP -->
         <Border Grid.Row="2" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="12">
-                <TextBlock Text="OTTIMIZZAZIONE RETE" Style="{StaticResource SysHeading3}"/>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="OTTIMIZZAZIONE RETE" Style="{StaticResource SysHeading3}" VerticalAlignment="Center"/>
+                    <ProgressRing x:Name="RingNetworkOpt" Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="False" Visibility="Collapsed"/>
+                </StackPanel>
                 <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Svuota DNS" Style="{StaticResource SysButtonSecondary}" Click="BtnFlushDNS_Click"/>
-                        <Button Content="Reset TCP/IP" Style="{StaticResource SysButtonSecondary}" Click="BtnResetTCP_Click"/>
-                        <Button Content="Reset Winsock" Style="{StaticResource SysButtonSecondary}" Click="BtnResetWinsock_Click"/>
+                        <Button x:Name="BtnFlushDNS" Content="Svuota DNS" Style="{StaticResource SysButtonSecondary}" Click="BtnFlushDNS_Click"/>
+                        <Button x:Name="BtnResetTCP" Content="Reset TCP/IP" Style="{StaticResource SysButtonSecondary}" Click="BtnResetTCP_Click"/>
+                        <Button x:Name="BtnResetWinsock" Content="Reset Winsock" Style="{StaticResource SysButtonSecondary}" Click="BtnResetWinsock_Click"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="DNS Google (8.8.8.8)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSGoogle_Click"/>
-                        <Button Content="DNS Cloudflare (1.1.1.1)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSCF_Click"/>
-                        <Button Content="Nagle OFF (gaming)" Style="{StaticResource SysButtonSecondary}" Click="BtnNagleOff_Click"/>
-                        <Button Content="Ripristina Nagle" Style="{StaticResource SysButtonSecondary}" Click="BtnNagleRestore_Click"/>
-                        <Button Content="DNS automatico (DHCP)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSDHCP_Click"/>
+                        <Button x:Name="BtnDNSGoogle" Content="DNS Google (8.8.8.8)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSGoogle_Click"/>
+                        <Button x:Name="BtnDNSCF" Content="DNS Cloudflare (1.1.1.1)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSCF_Click"/>
+                        <Button x:Name="BtnNagleOff" Content="Nagle OFF (gaming)" Style="{StaticResource SysButtonSecondary}" Click="BtnNagleOff_Click"/>
+                        <Button x:Name="BtnNagleRestore" Content="Ripristina Nagle" Style="{StaticResource SysButtonSecondary}" Click="BtnNagleRestore_Click"/>
+                        <Button x:Name="BtnDNSDHCP" Content="DNS automatico (DHCP)" Style="{StaticResource SysButtonSecondary}" Click="BtnDNSDHCP_Click"/>
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
@@ -97,7 +101,9 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBox x:Name="TxtPingHost" PlaceholderText="Host o IP (es. 8.8.8.8)"
                         Style="{StaticResource SysTextBox}" Width="240"/>
-                    <Button Content="Ping" Style="{StaticResource SysButtonPrimary}" Click="BtnPing_Click"/>
+                    <Button x:Name="BtnPing" Content="Ping" Style="{StaticResource SysButtonPrimary}" Click="BtnPing_Click"/>
+                    <ProgressRing x:Name="RingPing" Width="20" Height="20" VerticalAlignment="Center"
+                        IsActive="False" Visibility="Collapsed"/>
                     <TextBlock x:Name="TxtPingResult" FontFamily="Consolas" FontSize="13"
                         Foreground="#00D4A0" VerticalAlignment="Center"/>
                 </StackPanel>
@@ -109,7 +115,9 @@
             <StackPanel Spacing="12">
                 <TextBlock Text="SCANNER PORTE" Style="{StaticResource SysHeading3}"/>
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Content="Avvia scansione" Style="{StaticResource SysButtonPrimary}" Click="BtnScan_Click"/>
+                    <Button x:Name="BtnScanPorts" Content="Avvia scansione" Style="{StaticResource SysButtonPrimary}" Click="BtnScan_Click"/>
+                    <ProgressRing x:Name="RingScanPorts" Width="22" Height="22" VerticalAlignment="Center"
+                        IsActive="False" Visibility="Collapsed"/>
                     <ProgressBar x:Name="PbScan" Style="{StaticResource SysProgressBar}" Width="200" VerticalAlignment="Center" Maximum="100"/>
                     <TextBlock x:Name="TxtScanStatus" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
                 </StackPanel>

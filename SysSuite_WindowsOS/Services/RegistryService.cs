@@ -1,4 +1,7 @@
 using Microsoft.Win32;
+using SysSuite.Core;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysSuite.Services
 {
@@ -57,17 +60,16 @@ namespace SysSuite.Services
             return issues;
         }
 
-        public string Backup(string backupName)
+        public Task<List<Models.RegistryIssue>> ScanAsync(IProgress<string>? progress = null,
+            CancellationToken cancellationToken = default) =>
+            Task.Run(() => Scan(progress), cancellationToken);
+
+        public async Task<string> BackupAsync(string backupName, CancellationToken cancellationToken = default)
         {
             string path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                 $"SysSuite_Registry_Backup_{backupName}_{DateTime.Now:yyyyMMdd_HHmmss}.reg");
-            var p = new System.Diagnostics.Process
-            {
-                StartInfo = new("reg.exe", $"export HKLM \"{path}\" /y")
-                    { CreateNoWindow = true, UseShellExecute = false }
-            };
-            p.Start(); p.WaitForExit();
+            await ProcessRunner.RunAsync("reg.exe", $"export HKLM \"{path}\" /y", cancellationToken).ConfigureAwait(false);
             Emit($"Backup registro: {path}", "ok");
             return path;
         }

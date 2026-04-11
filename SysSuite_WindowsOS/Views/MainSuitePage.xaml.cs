@@ -6,6 +6,7 @@ using Windows.UI;
 using System.Diagnostics;
 using SysSuite.Services;
 using System.ServiceProcess;
+using System.Threading.Tasks;
 
 namespace SysSuite.Views
 {
@@ -14,7 +15,6 @@ namespace SysSuite.Views
         private readonly CleanupService      _clean   = new();
         private readonly SystemRepairService _repair  = new();
         private readonly PerformanceService  _perf    = new();
-        private readonly PrivacyService      _priv    = new();
         private readonly ReportService       _report  = new();
         private readonly ServicesManager    _services = new();
 
@@ -28,22 +28,21 @@ namespace SysSuite.Views
             _clean.Log    += AppendLog;
             _repair.Log   += AppendLog;
             _perf.Log     += AppendLog;
-            _priv.Log     += AppendLog;
+            TabPrivacy.Log += AppendLog;
             _services.Log += AppendLog;
 
             _tabs    = new UIElement[] { TabPulizia, TabPrestazioni, TabPrivacy, TabServizi, TabReport };
             _tabBtns = new Button[]    { BtnTab0, BtnTab1, BtnTab2, BtnTab3, BtnTab4 };
 
             // Ripristina ultima tab visitata
-            Loaded += (_, _) =>
+            Loaded += async (_, _) =>
             {
                 var s = SettingsService.Load();
                 int startTab = s.LastOptimizationTab;
                 SwitchTab(Math.Clamp(startTab, 0, _tabs.Length - 1));
                 LoadServices();
-                RefreshCurrentPlan();
+                await RefreshCurrentPlanAsync();
                 RefreshScheduleStatus();
-                LoadPrivacyState();
             };
         }
 
@@ -91,15 +90,37 @@ namespace SysSuite.Views
             if (!CheckAdmin("Pulizia Prefetch")) return;
             try { _clean.CleanPrefetch(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
         }
-        private void BtnCleanRecycle_Click(object s, RoutedEventArgs e)
+        private async void BtnCleanRecycle_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("Svuota Cestino")) return;
-            try { _clean.CleanRecycleBin(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try { await _clean.CleanRecycleBinAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
-        private void BtnCleanWU_Click(object s, RoutedEventArgs e)
+        private async void BtnCleanWU_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("Cache Windows Update")) return;
-            try { _clean.CleanWindowsUpdate(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try { await _clean.CleanWindowsUpdateAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
         private async void BtnCleanAll_Click(object s, RoutedEventArgs e)
         {
@@ -115,43 +136,125 @@ namespace SysSuite.Views
             };
             if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
 
-            BtnCleanTemp_Click(s, e);
-            BtnCleanThumb_Click(s, e);
-            BtnCleanWinTemp_Click(s, e);
-            BtnCleanPrefetch_Click(s, e);
-            BtnCleanRecycle_Click(s, e);
-            BtnCleanWU_Click(s, e);
-            ToastHelper.SendSuccess("SysSuite One", "Pulizia completata.");
+            BtnCleanAll.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try
+            {
+                await Task.Run(() => { try { _clean.CleanTemp(); } catch (Exception ex) { AppendLog(ex.Message, "err"); } });
+                await Task.Run(() => { try { _clean.CleanThumbnails(); } catch (Exception ex) { AppendLog(ex.Message, "err"); } });
+                if (AdminHelper.IsAdmin())
+                {
+                    await Task.Run(() => { try { _clean.CleanWinTemp(); } catch (Exception ex) { AppendLog(ex.Message, "err"); } });
+                    await Task.Run(() => { try { _clean.CleanPrefetch(); } catch (Exception ex) { AppendLog(ex.Message, "err"); } });
+                    try { await _clean.CleanRecycleBinAsync(); }
+                    catch (Exception ex) { AppendLog(ex.Message, "err"); }
+                    try { await _clean.CleanWindowsUpdateAsync(); }
+                    catch (Exception ex) { AppendLog(ex.Message, "err"); }
+                }
+                else
+                    AppendLog("Pulizia completa: operazioni su C:\\Windows, cestino e WU richiedono Admin.", "warn");
+                ToastHelper.SendSuccess("SysSuite One", "Pulizia completata.");
+            }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                BtnCleanAll.IsEnabled = true;
+            }
         }
 
         // ── Riparazione — sempre admin ─────────────────────────
-        private void BtnSFC_Click(object s, RoutedEventArgs e)
+        private async void BtnSFC_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("SFC /scannow")) return;
-            try { _repair.RunSFC(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try { await _repair.RunSFCAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
-        private void BtnDISM_Click(object s, RoutedEventArgs e)
+        private async void BtnDISM_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("DISM RestoreHealth")) return;
-            try { _repair.RunDISM(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try { await _repair.RunDISMAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
-        private void BtnCHKDSK_Click(object s, RoutedEventArgs e)
+        private async void BtnCHKDSK_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("Pianifica CHKDSK")) return;
-            try { _repair.ScheduleChkDsk(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try { await _repair.ScheduleChkDskAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
 
         // ── Prestazioni ────────────────────────────────────────
         // Piani energetici: powercfg — admin richiesto
-        private void BtnBalanced_Click(object s, RoutedEventArgs e)
+        private async void BtnBalanced_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("Piano Bilanciato")) return;
-            try { _perf.SetBalancedPlan(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try
+            {
+                await _perf.SetBalancedPlanAsync();
+                await RefreshCurrentPlanAsync();
+            }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
-        private void BtnUltimate_Click(object s, RoutedEventArgs e)
+        private async void BtnUltimate_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("Piano Ultimate Performance")) return;
-            try { _perf.SetUltimatePlan(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try
+            {
+                await _perf.SetUltimatePlanAsync();
+                await RefreshCurrentPlanAsync();
+            }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
+            }
         }
         // ReduceAnimations: HKCU — NO admin
         private void BtnAnim_Click(object s, RoutedEventArgs e)
@@ -165,65 +268,20 @@ namespace SysSuite.Views
             try { _perf.EnableFastStartup(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
         }
         // OptimizeDisk: defrag — admin
-        private void BtnDefrag_Click(object s, RoutedEventArgs e)
+        private async void BtnDefrag_Click(object s, RoutedEventArgs e)
         {
+            if (s is not Button btn) return;
             if (!CheckAdmin("Ottimizza disco")) return;
-            try { _perf.OptimizeDisk(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
-        }
-
-        // ── Privacy — ToggleSwitch bidirezionali ──────────────────
-        private bool _privacyLoading = false;
-
-        private void LoadPrivacyState()
-        {
-            _privacyLoading = true;
-            try
+            btn.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
+            try { await _perf.OptimizeDiskAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally
             {
-                TogTelemetry.IsOn = !_priv.IsTelemetryDisabled();
-                TogAdId.IsOn      = !_priv.IsAdvertisingIdDisabled();
-                TogActivity.IsOn  = !_priv.IsActivityHistoryDisabled();
-                TogCortana.IsOn   = !_priv.IsCortanaDisabled();
-                TogStartSugg.IsOn = !_priv.IsStartSuggestionsDisabled();
-                TogLockTips.IsOn  = !_priv.IsLockScreenTipsDisabled();
-            }
-            catch { }
-            finally { _privacyLoading = false; }
-        }
-
-        private void TogPrivacy_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_privacyLoading) return;
-            if (sender is not ToggleSwitch tog || tog.Tag is not string tag) return;
-
-            // Telemetria, Cronologia, Cortana richiedono admin (HKLM)
-            bool needsAdmin = tag is "telemetry" or "activity" or "cortana";
-            if (needsAdmin && !AdminHelper.IsAdmin())
-            {
-                AppendLog("Questa impostazione richiede Admin. Usa 'Riavvia come Admin' in basso a destra.", "warn");
-                _privacyLoading = true;
-                tog.IsOn = !tog.IsOn; // revert
-                _privacyLoading = false;
-                return;
-            }
-
-            try
-            {
-                switch (tag)
-                {
-                    case "telemetry": _priv.SetTelemetry(tog.IsOn); break;
-                    case "adid":     _priv.SetAdvertisingId(tog.IsOn); break;
-                    case "activity": _priv.SetActivityHistory(tog.IsOn); break;
-                    case "cortana":  _priv.SetCortana(tog.IsOn); break;
-                    case "startsugg":_priv.SetStartSuggestions(tog.IsOn); break;
-                    case "locktips": _priv.SetLockScreenTips(tog.IsOn); break;
-                }
-            }
-            catch (Exception ex)
-            {
-                AppendLog("Errore: " + ex.Message, "err");
-                _privacyLoading = true;
-                tog.IsOn = !tog.IsOn;
-                _privacyLoading = false;
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+                btn.IsEnabled = true;
             }
         }
 
@@ -285,26 +343,14 @@ namespace SysSuite.Views
             catch (Exception ex) { AppendLog(ex.Message, "err"); }
         }
 
-                private void RefreshCurrentPlan()
+                private async Task RefreshCurrentPlanAsync()
         {
             try
             {
-                var plan = _perf.GetCurrentPlan();
+                var plan = await _perf.GetCurrentPlanAsync();
                 TxtCurrentPlan.Text = "Piano: " + plan;
             }
             catch { TxtCurrentPlan.Text = "Piano: n/d"; }
-        }
-
-        private void BtnBalancedEx_Click(object s, RoutedEventArgs e)
-        {
-            BtnBalanced_Click(s, e);
-            RefreshCurrentPlan();
-        }
-
-        private void BtnUltimateEx_Click(object s, RoutedEventArgs e)
-        {
-            BtnUltimate_Click(s, e);
-            RefreshCurrentPlan();
         }
 
         private void BtnAnimRestore_Click(object s, RoutedEventArgs e)

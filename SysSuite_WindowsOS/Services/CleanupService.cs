@@ -20,11 +20,13 @@ namespace SysSuite.Services
         {
             DeleteFolder(@"C:\Windows\Prefetch", "Prefetch");
         }
-        public void CleanRecycleBin()
+
+        public async Task CleanRecycleBinAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("cmd.exe", "/c rd /s /q %SystemDrive%\\$Recycle.bin");
+            await ProcessRunner.RunAsync("cmd.exe", "/c rd /s /q %SystemDrive%\\$Recycle.bin", cancellationToken).ConfigureAwait(false);
             Emit("Cestino svuotato", "ok");
         }
+
         public void CleanThumbnails()
         {
             string path = Path.Combine(
@@ -34,12 +36,14 @@ namespace SysSuite.Services
                 TryDelete(f);
             Emit("Cache miniature rimossa", "ok");
         }
-        public void CleanWindowsUpdate()
+
+        public async Task CleanWindowsUpdateAsync(CancellationToken cancellationToken = default)
         {
-            ProcessRunner.Run("net.exe", "stop wuauserv");
+            await ProcessRunner.RunAsync("net.exe", "stop wuauserv", cancellationToken).ConfigureAwait(false);
             DeleteFolder(@"C:\Windows\SoftwareDistribution\Download", "Cache Windows Update");
-            ProcessRunner.Run("net.exe", "start wuauserv");
+            await ProcessRunner.RunAsync("net.exe", "start wuauserv", cancellationToken).ConfigureAwait(false);
         }
+
         // ── Duplicati ────────────────────────────────────────
         public List<DuplicateGroup> FindDuplicates(string root, IProgress<string>? progress = null)
         {
@@ -93,6 +97,10 @@ namespace SysSuite.Services
             catch (Exception ex) { Emit($"Duplicati: {ex.Message}", "err"); }
             return groups.OrderByDescending(g => g.WastedBytes).ToList();
         }
+
+        public Task<List<DuplicateGroup>> FindDuplicatesAsync(string root, IProgress<string>? progress = null,
+            CancellationToken cancellationToken = default) =>
+            Task.Run(() => FindDuplicates(root, progress), cancellationToken);
 
         // ── Utils ────────────────────────────────────────────
         private void DeleteFolder(string path, string label)

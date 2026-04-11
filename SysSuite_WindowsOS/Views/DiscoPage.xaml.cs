@@ -37,48 +37,73 @@ namespace SysSuite.Views
             catch { }
         }
 
+        private void SetScanBusy(bool busy)
+        {
+            BtnHeavyFolders.IsEnabled = !busy;
+            BtnLargeFiles.IsEnabled   = !busy;
+            BtnSmart.IsEnabled        = !busy;
+            BtnDuplicates.IsEnabled   = !busy;
+            BusyRing.Visibility       = busy ? Visibility.Visible : Visibility.Collapsed;
+            BusyRing.IsActive         = busy;
+            PbScan.IsIndeterminate    = busy;
+        }
+
         private async void BtnFolders_Click(object sender, RoutedEventArgs e)
         {
-            ((Button)sender).IsEnabled = false;
-            PbScan.IsIndeterminate = true; TxtStatus.Text = "Analisi in corso...";
+            if (sender is not Button btn) return;
+            btn.IsEnabled = false;
+            SetScanBusy(true);
+            TxtStatus.Text = "Analisi in corso...";
             LvItems.ItemsSource = null;
             var progress = new Progress<string>(p => TxtStatus.Text = p.Length > 40 ? p[..40]+"..." : p);
             try
             {
-                var result = await Task.Run(() => _analyzer.GetHeavyFolders(@"C:\", 2, progress));
+                var result = await _analyzer.GetHeavyFoldersAsync(@"C:\", 2, progress);
                 LvItems.ItemsSource = result.Select(d => new { Size = d.SizeFormatted, Path = d.Path }).ToList();
                 TxtStatus.Text = $"{result.Count} cartelle";
             }
             catch (Exception ex) { TxtStatus.Text = $"Errore: {ex.Message}"; }
-            finally { PbScan.IsIndeterminate = false; ((Button)sender).IsEnabled = true; }
+            finally
+            {
+                SetScanBusy(false);
+                btn.IsEnabled = true;
+            }
         }
 
         private async void BtnLargeFiles_Click(object sender, RoutedEventArgs e)
         {
-            ((Button)sender).IsEnabled = false;
-            PbScan.IsIndeterminate = true; TxtScanType.Text = "FILE GRANDI (> 100 MB) — C:";
+            if (sender is not Button btn) return;
+            btn.IsEnabled = false;
+            SetScanBusy(true);
+            TxtScanType.Text = "FILE GRANDI (> 100 MB) — C:";
             TxtStatus.Text = "Ricerca file grandi...";
             LvItems.ItemsSource = null;
             var progress = new Progress<string>(p => TxtStatus.Text = p.Length > 40 ? p[..40]+"..." : p);
             try
             {
-                var result = await Task.Run(() => _analyzer.GetLargeFiles(@"C:\", 100*1024*1024, progress));
+                var result = await _analyzer.GetLargeFilesAsync(@"C:\", 100*1024*1024, progress);
                 LvItems.ItemsSource = result.Select(d => new { Size = d.SizeFormatted, Path = System.IO.Path.Combine(d.Path, d.Name) }).ToList();
                 TxtStatus.Text = $"{result.Count} file";
             }
             catch (Exception ex) { TxtStatus.Text = $"Errore: {ex.Message}"; }
-            finally { PbScan.IsIndeterminate = false; ((Button)sender).IsEnabled = true; }
+            finally
+            {
+                SetScanBusy(false);
+                btn.IsEnabled = true;
+            }
         }
 
         private async void BtnSmart_Click(object sender, RoutedEventArgs e)
         {
-            ((Button)sender).IsEnabled = false;
-            PbScan.IsIndeterminate = true; TxtScanType.Text = "DATI S.M.A.R.T. — TUTTI I DISCHI";
-TxtStatus.Text = "Lettura SMART...";
+            if (sender is not Button btn) return;
+            btn.IsEnabled = false;
+            SetScanBusy(true);
+            TxtScanType.Text = "DATI S.M.A.R.T. — TUTTI I DISCHI";
+            TxtStatus.Text = "Lettura SMART...";
             LvItems.ItemsSource = null;
             try
             {
-                var result = await Task.Run(() => _analyzer.GetSmartData());
+                var result = await _analyzer.GetSmartDataAsync();
                 LvItems.ItemsSource = result.Select(d => new
                 {
                     Size = d.FailPredicted ? "GUASTO" : "OK",
@@ -87,21 +112,26 @@ TxtStatus.Text = "Lettura SMART...";
                 TxtStatus.Text = $"{result.Count} dischi";
             }
             catch (Exception ex) { TxtStatus.Text = $"Errore: {ex.Message}"; }
-            finally { PbScan.IsIndeterminate = false; ((Button)sender).IsEnabled = true; }
+            finally
+            {
+                SetScanBusy(false);
+                btn.IsEnabled = true;
+            }
         }
+
         private async void BtnDuplicates_Click(object sender, RoutedEventArgs e)
         {
-            ((Button)sender).IsEnabled = false;
-            PbScan.IsIndeterminate = true;
+            if (sender is not Button btn) return;
+            btn.IsEnabled = false;
+            SetScanBusy(true);
             TxtScanType.Text = "FILE DUPLICATI — C:\\Users";
-TxtStatus.Text = "Ricerca duplicati (puo richiedere alcuni minuti)...";
+            TxtStatus.Text = "Ricerca duplicati (puo richiedere alcuni minuti)...";
             LvItems.ItemsSource = null;
             var progress = new Progress<string>(p =>
                 TxtStatus.Text = p.Length > 50 ? p.Substring(0, 50) + "..." : p);
             try
             {
-                var result = await Task.Run(() =>
-                    _cleanup.FindDuplicates(@"C:\Users", progress));
+                var result = await _cleanup.FindDuplicatesAsync(@"C:\Users", progress);
                 long totalWasted = result.Sum(g => g.WastedBytes);
                 LvItems.ItemsSource = result.Select(g => new
                 {
@@ -112,7 +142,11 @@ TxtStatus.Text = "Ricerca duplicati (puo richiedere alcuni minuti)...";
                     SysSuite.Models.DiskEntry.FormatSize(totalWasted) + " recuperabili";
             }
             catch (Exception ex) { TxtStatus.Text = "Errore: " + ex.Message; }
-            finally { PbScan.IsIndeterminate = false; ((Button)sender).IsEnabled = true; }
+            finally
+            {
+                SetScanBusy(false);
+                btn.IsEnabled = true;
+            }
         }
 
     }

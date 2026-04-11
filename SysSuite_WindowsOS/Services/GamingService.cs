@@ -1,5 +1,7 @@
 using SysSuite.Core;
 using Microsoft.Win32;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysSuite.Services
 {
@@ -29,12 +31,12 @@ namespace SysSuite.Services
             _net.Log  += (m, t) => Log?.Invoke(m, t);
         }
 
-        public void Activate()
+        public async Task ActivateAsync(CancellationToken cancellationToken = default)
         {
             Emit("=== ATTIVAZIONE GAMING MODE ===", "head");
 
-            _prevPowerPlan = _perf.GetCurrentPlan();
-            _perf.SetUltimatePlan();
+            _prevPowerPlan = await _perf.GetCurrentPlanAsync(cancellationToken).ConfigureAwait(false);
+            await _perf.SetUltimatePlanAsync(cancellationToken).ConfigureAwait(false);
 
             EnableGameMode(true);
             Emit("Game Mode Windows abilitato", "ok");
@@ -48,17 +50,17 @@ namespace SysSuite.Services
                 try { _svc.Disable(s); } catch { }
 
             foreach (var s in BackgroundServices)
-                ProcessRunner.Run("net.exe", $"stop {s}");
+                await ProcessRunner.RunAsync("net.exe", $"stop {s}", cancellationToken).ConfigureAwait(false);
 
             IsActive = true;
             Emit("Gaming Mode ATTIVA", "ok");
         }
 
-        public void Deactivate()
+        public async Task DeactivateAsync(CancellationToken cancellationToken = default)
         {
             Emit("=== RIPRISTINO MODALITA' STANDARD ===", "head");
 
-            _perf.SetBalancedPlan();
+            await _perf.SetBalancedPlanAsync(cancellationToken).ConfigureAwait(false);
 
             EnableGameMode(false);
 
@@ -71,7 +73,7 @@ namespace SysSuite.Services
                 try { _svc.Enable(s, "auto"); } catch { }
 
             foreach (var s in BackgroundServices)
-                ProcessRunner.Run("net.exe", $"start {s}");
+                await ProcessRunner.RunAsync("net.exe", $"start {s}", cancellationToken).ConfigureAwait(false);
 
             IsActive = false;
             Emit("Modalita' standard ripristinata", "ok");

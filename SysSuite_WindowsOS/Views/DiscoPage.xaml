@@ -17,10 +17,11 @@
         <Border Grid.Row="1" Style="{StaticResource SysCard}" Margin="0,0,0,14">
             <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Content="Cartelle pesanti (C:)" Style="{StaticResource SysButtonSecondary}" Click="BtnFolders_Click"/>
-                    <Button Content="File grandi >100MB" Style="{StaticResource SysButtonSecondary}" Click="BtnLargeFiles_Click"/>
-                    <Button Content="Dati S.M.A.R.T." Style="{StaticResource SysButtonSecondary}" Click="BtnSmart_Click"/>
-                    <Button Content="Trova duplicati" Style="{StaticResource SysButtonSecondary}" Click="BtnDuplicates_Click"/>
+                    <Button x:Name="BtnHeavyFolders" Content="Cartelle pesanti (C:)" Style="{StaticResource SysButtonSecondary}" Click="BtnFolders_Click"/>
+                    <Button x:Name="BtnLargeFiles" Content="File grandi >100MB" Style="{StaticResource SysButtonSecondary}" Click="BtnLargeFiles_Click"/>
+                    <Button x:Name="BtnSmart" Content="Dati S.M.A.R.T." Style="{StaticResource SysButtonSecondary}" Click="BtnSmart_Click"/>
+                    <Button x:Name="BtnDuplicates" Content="Trova duplicati" Style="{StaticResource SysButtonSecondary}" Click="BtnDuplicates_Click"/>
+                    <ProgressRing x:Name="BusyRing" Width="28" Height="28" IsActive="True" Visibility="Collapsed" VerticalAlignment="Center"/>
                     <ProgressBar x:Name="PbScan" Style="{StaticResource SysProgressBar}" Width="160" VerticalAlignment="Center" IsIndeterminate="False"/>
                     <TextBlock x:Name="TxtStatus" Text="" Style="{StaticResource SysCaption}" VerticalAlignment="Center"/>
                 </StackPanel>

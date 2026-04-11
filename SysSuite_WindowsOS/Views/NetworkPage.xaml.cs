@@ -15,56 +15,97 @@ namespace SysSuite.Views
             _net.Log += AppendLog;
         }
 
+        private void SetNetworkOptimizationBusy(bool busy)
+        {
+            RingNetworkOpt.IsActive = busy;
+            RingNetworkOpt.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            BtnFlushDNS.IsEnabled = !busy;
+            BtnResetTCP.IsEnabled = !busy;
+            BtnResetWinsock.IsEnabled = !busy;
+            BtnDNSGoogle.IsEnabled = !busy;
+            BtnDNSCF.IsEnabled = !busy;
+            BtnNagleOff.IsEnabled = !busy;
+            BtnNagleRestore.IsEnabled = !busy;
+            BtnDNSDHCP.IsEnabled = !busy;
+        }
+
         // Richiedono admin (netsh, ipconfig /flushdns, HKLM)
-        private void BtnFlushDNS_Click(object s, RoutedEventArgs e)
+        private async void BtnFlushDNS_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Svuota DNS")) return;
-            try { _net.FlushDNS(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { await _net.FlushDNSAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
-        private void BtnResetTCP_Click(object s, RoutedEventArgs e)
+
+        private async void BtnResetTCP_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Reset TCP/IP")) return;
-            try { _net.ResetTCPIP(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { await _net.ResetTCPIPAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
-        private void BtnResetWinsock_Click(object s, RoutedEventArgs e)
+
+        private async void BtnResetWinsock_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Reset Winsock")) return;
-            try { _net.ResetWinsock(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { await _net.ResetWinsockAsync(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
-        private void BtnDNSGoogle_Click(object s, RoutedEventArgs e)
+
+        private async void BtnDNSGoogle_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("DNS Google")) return;
-            try { _net.SetDNS("8.8.8.8", "8.8.4.4", "Google"); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { await _net.SetDNSAsync("8.8.8.8", "8.8.4.4", "Google"); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
-        private void BtnDNSCF_Click(object s, RoutedEventArgs e)
+
+        private async void BtnDNSCF_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("DNS Cloudflare")) return;
-            try { _net.SetDNS("1.1.1.1", "1.0.0.1", "Cloudflare"); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { await _net.SetDNSAsync("1.1.1.1", "1.0.0.1", "Cloudflare"); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
-        private void BtnDNSDHCP_Click(object s, RoutedEventArgs e)
+
+        private async void BtnDNSDHCP_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Ripristina DNS automatico")) return;
-            try { _net.SetDNS("", "", "DHCP"); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { await _net.SetDNSAsync("", "", "DHCP"); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
 
         private void BtnNagleRestore_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Ripristina Nagle")) return;
-            try { _net.RestoreNagle(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { _net.RestoreNagle(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
 
         private async void BtnPing_Click(object sender, RoutedEventArgs e)
         {
             string host = TxtPingHost.Text.Trim();
             if (string.IsNullOrEmpty(host)) { TxtPingResult.Text = "Inserisci un host."; return; }
-            // Validazione: solo hostname, FQDN o indirizzo (niente shell metacharacters)
             if (host.Length > 253 || !System.Text.RegularExpressions.Regex.IsMatch(host, @"^[-a-zA-Z0-9.:_%]+$"))
             {
                 TxtPingResult.Text = "Host non valido.";
                 return;
             }
             TxtPingResult.Text = "...";
-            ((Button)sender).IsEnabled = false;
+            BtnPing.IsEnabled = false;
+            RingPing.IsActive = true;
+            RingPing.Visibility = Visibility.Visible;
             try
             {
                 double ms = await _net.PingAsync(host);
@@ -77,19 +118,29 @@ namespace SysSuite.Views
                         : Windows.UI.Color.FromArgb(255, 255, 90, 90));
             }
             catch (Exception ex) { TxtPingResult.Text = "Errore: " + ex.Message; }
-            finally { ((Button)sender).IsEnabled = true; }
+            finally
+            {
+                RingPing.IsActive = false;
+                RingPing.Visibility = Visibility.Collapsed;
+                BtnPing.IsEnabled = true;
+            }
         }
 
         private void BtnNagleOff_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Nagle OFF")) return;
-            try { _net.DisableNagle(); } catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            SetNetworkOptimizationBusy(true);
+            try { _net.DisableNagle(); }
+            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            finally { SetNetworkOptimizationBusy(false); }
         }
 
         // Scanner porte — NO admin (connessione TCP locale)
         private async void BtnScan_Click(object sender, RoutedEventArgs e)
         {
-            ((Button)sender).IsEnabled = false;
+            BtnScanPorts.IsEnabled = false;
+            RingScanPorts.IsActive = true;
+            RingScanPorts.Visibility = Visibility.Visible;
             LvPorts.ItemsSource = null;
             TxtScanStatus.Text = "Scansione in corso...";
             var progress = new Progress<int>(v => { PbScan.Value = v; });
@@ -100,7 +151,12 @@ namespace SysSuite.Views
                 TxtScanStatus.Text = ports.Count + " porte aperte trovate.";
             }
             catch (Exception ex) { AppendLog(ex.Message, "err"); }
-            finally { ((Button)sender).IsEnabled = true; }
+            finally
+            {
+                RingScanPorts.IsActive = false;
+                RingScanPorts.Visibility = Visibility.Collapsed;
+                BtnScanPorts.IsEnabled = true;
+            }
         }
 
         private void BtnClear_Click(object s, RoutedEventArgs e) => TxtLog.Text = "";
@@ -122,12 +178,11 @@ namespace SysSuite.Views
                     TxtSpeedDetail.Text = result.MbDownloaded.ToString("0.#") + " MB in "
                         + result.Seconds.ToString("0.#") + " secondi";
 
-                    // Colore basato sulla velocità
                     TxtSpeedResult.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                        result.Mbps >= 100 ? Windows.UI.Color.FromArgb(255, 52, 211, 153)   // verde
-                        : result.Mbps >= 30 ? Windows.UI.Color.FromArgb(255, 59, 158, 255)   // blu
-                        : result.Mbps >= 10 ? Windows.UI.Color.FromArgb(255, 255, 181, 71)   // ambra
-                        :                     Windows.UI.Color.FromArgb(255, 255, 90, 90));   // rosso
+                        result.Mbps >= 100 ? Windows.UI.Color.FromArgb(255, 52, 211, 153)
+                        : result.Mbps >= 30 ? Windows.UI.Color.FromArgb(255, 59, 158, 255)
+                        : result.Mbps >= 10 ? Windows.UI.Color.FromArgb(255, 255, 181, 71)
+                        :                     Windows.UI.Color.FromArgb(255, 255, 90, 90));
 
                     AppendLog($"Speed test: {result.Mbps:0.#} Mbps ({result.MbDownloaded:0.#} MB in {result.Seconds:0.#}s)", "ok");
                 }

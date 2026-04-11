@@ -34,38 +34,64 @@ namespace SysSuite.Views
                 AppendLog("Gaming Mode richiede privilegi Admin. Usa 'Riavvia come Admin' in basso a destra.", "warn");
         }
 
-        private void BtnActivate_Click(object sender, RoutedEventArgs e)
+        private async void BtnActivate_Click(object sender, RoutedEventArgs e)
         {
+            if (sender is not Button btn) return;
             if (!CheckAdmin("Attiva Gaming Mode")) return;
-            BtnActivate.IsEnabled   = false;
+            btn.IsEnabled = false;
             BtnDeactivate.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
             try
             {
-                _gaming.Activate();
+                await _gaming.ActivateAsync();
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(255, 52, 211, 153));
                 TxtStatus.Text = "Gaming Mode ATTIVA";
                 BtnDeactivate.IsEnabled = true;
                 ToastHelper.SendSuccess("SysSuite One", "Gaming Mode attivata — sistema ottimizzato.");
                 SettingsService.Update(s => s.GamingModeActive = true);
             }
-            catch (Exception ex) { AppendLog("Errore: " + ex.Message, "err"); BtnActivate.IsEnabled = true; }
+            catch (Exception ex)
+            {
+                AppendLog("Errore: " + ex.Message, "err");
+                BtnActivate.IsEnabled = true;
+                BtnDeactivate.IsEnabled = false;
+            }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+            }
         }
 
-        private void BtnDeactivate_Click(object sender, RoutedEventArgs e)
+        private async void BtnDeactivate_Click(object sender, RoutedEventArgs e)
         {
+            if (sender is not Button btn) return;
             if (!CheckAdmin("Disattiva Gaming Mode")) return;
-            BtnActivate.IsEnabled   = false;
-            BtnDeactivate.IsEnabled = false;
+            btn.IsEnabled = false;
+            BtnActivate.IsEnabled = false;
+            BusyRing.Visibility = Visibility.Visible;
+            BusyRing.IsActive = true;
             try
             {
-                _gaming.Deactivate();
+                await _gaming.DeactivateAsync();
                 StatusDot.Fill = new SolidColorBrush(Color.FromArgb(255, 255, 90, 90));
                 TxtStatus.Text = "Gaming Mode INATTIVA";
                 BtnActivate.IsEnabled = true;
                 ToastHelper.SendSuccess("SysSuite One", "Gaming Mode disattivata — sistema ripristinato.");
                 SettingsService.Update(s => s.GamingModeActive = false);
             }
-            catch (Exception ex) { AppendLog("Errore: " + ex.Message, "err"); BtnDeactivate.IsEnabled = true; }
+            catch (Exception ex)
+            {
+                AppendLog("Errore: " + ex.Message, "err");
+                BtnDeactivate.IsEnabled = true;
+                BtnActivate.IsEnabled = false;
+            }
+            finally
+            {
+                BusyRing.IsActive = false;
+                BusyRing.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void BtnClearLog_Click(object sender, RoutedEventArgs e) => TxtLog.Text = "";
