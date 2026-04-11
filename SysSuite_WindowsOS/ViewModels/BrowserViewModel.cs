@@ -22,11 +22,7 @@ namespace SysSuite.ViewModels
         private static readonly SolidColorBrush InstalledMissingBrush =
             new(Color.FromArgb(255, 61, 77, 102));
 
-        public BrowserViewModel(BrowserService svc)
-        {
-            _svc = svc;
-            _dispatcher.TryEnqueue(() => _ = DetectBrowsersAsync());
-        }
+        public BrowserViewModel(BrowserService svc) => _svc = svc;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(BusyRingVisibility))]
@@ -67,8 +63,17 @@ namespace SysSuite.ViewModels
 
         private void ClearError() => ErrorMessage = "";
 
+        /// <summary>Caricamento iniziale pagina (stesso flusso del rilevamento browser).</summary>
+        [RelayCommand]
+        public async Task LoadDataAsync()
+        {
+            await DetectBrowsersAsync();
+        }
+
         [RelayCommand(CanExecute = nameof(CanRunWhenIdle))]
-        private async Task DetectBrowsersAsync()
+        private Task DetectBrowsersAsync() => DetectBrowsersCoreAsync();
+
+        private async Task DetectBrowsersCoreAsync()
         {
             ClearError();
             IsBusy = true;

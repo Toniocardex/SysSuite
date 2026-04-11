@@ -7,10 +7,13 @@ namespace SysSuite.Views
 {
     public sealed partial class BrowserPage : Page
     {
+        public BrowserViewModel ViewModel { get; }
+
         public BrowserPage()
         {
             InitializeComponent();
-            DataContext = App.Services.GetRequiredService<BrowserViewModel>();
+            DataContext = ViewModel = App.Services.GetRequiredService<BrowserViewModel>();
+            this.Loaded += (s, e) => ViewModel.LoadDataCommand.Execute(null);
         }
     }
 }
