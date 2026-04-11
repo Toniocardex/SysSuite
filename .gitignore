@@ -33,6 +33,10 @@ Desktop.ini
 **/AppPackages/
 **/BundleArtifacts/
 
+## Script di compilazione/firma locale (mai su GitHub)
+SysSuite_WindowsOS/COMPILA_E_FIRMA.bat
+SysSuite_WindowsOS/COMPILA_E_FIRMA_VENTANA.bat
+
 ## Misc
 *.log
 *.tmp
