@@ -169,6 +169,8 @@ namespace SysSuite.Models
         public string InstallDate { get; set; } = "";
         public long   SizeBytes   { get; set; }
         public string UninstallString { get; set; } = "";
+        /// <summary>Valore registro DisplayIcon (es. percorso .ico o .exe,indice).</summary>
+        public string DisplayIcon { get; set; } = "";
         public int    DaysUnused  { get; set; }
     }
 }

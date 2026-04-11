@@ -43,6 +43,8 @@ namespace SysSuite
             services.AddTransient<DriverViewModel>();
             services.AddTransient<PrivacyViewModel>();
             services.AddTransient<BrowserViewModel>();
+            services.AddSingleton<ProcessManager>();
+            services.AddTransient<AppManagerViewModel>();
             Services = services.BuildServiceProvider();
         }
 

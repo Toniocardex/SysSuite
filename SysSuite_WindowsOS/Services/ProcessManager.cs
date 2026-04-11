@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Win32;
 using Serilog;
+using SysSuite.Core;
 using SysSuite.Models;
 using System.Threading;
 using System.Threading.Tasks;
@@ -182,26 +183,46 @@ namespace SysSuite.Services
 
             void ReadHive(RegistryKey root, string relativePath, string hiveLabel)
             {
+                RegistryKey? uninstallRoot = null;
                 try
                 {
-                    using var key = root.OpenSubKey(relativePath);
-                    if (key == null) return;
+                    uninstallRoot = root.OpenSubKey(relativePath);
+                }
+                catch (Exception ex)
+                {
+                    Serilog.Log.Warning(ex,
+                        "[App] Impossibile aprire ramo Uninstall. Hive={Hive}, Path={Path}",
+                        hiveLabel, relativePath);
+                    return;
+                }
 
-                    foreach (var sub in key.GetSubKeyNames())
+                using (uninstallRoot)
+                {
+                    if (uninstallRoot == null) return;
+
+                    string[] subKeyNames;
+                    try
+                    {
+                        subKeyNames = uninstallRoot.GetSubKeyNames();
+                    }
+                    catch (Exception ex)
+                    {
+                        Serilog.Log.Warning(ex,
+                            "[App] Enumerazione sottochiavi fallita. Hive={Hive}, Path={Path}",
+                            hiveLabel, relativePath);
+                        return;
+                    }
+
+                    foreach (var sub in subKeyNames)
                     {
                         try
                         {
-                            using var app = key.OpenSubKey(sub);
+                            using var app = uninstallRoot.OpenSubKey(sub);
                             if (app == null) continue;
 
                             string? name = app.GetValue("DisplayName")?.ToString();
                             if (string.IsNullOrWhiteSpace(name))
-                            {
-                                Serilog.Log.Warning(
-                                    "[App] DisplayName mancante o vuoto. Hive={Hive}, SubKey={SubKey}",
-                                    hiveLabel, sub);
                                 continue;
-                            }
 
                             if (!seen.Add(name))
                                 continue;
@@ -223,6 +244,9 @@ namespace SysSuite.Services
                                     hiveLabel, sub, name);
                             }
 
+                            string uninstall = app.GetValue("UninstallString")?.ToString()?.Trim() ?? "";
+                            string displayIcon = app.GetValue("DisplayIcon")?.ToString()?.Trim() ?? "";
+
                             result.Add(new InstalledApp
                             {
                                 Name = name,
@@ -230,22 +254,18 @@ namespace SysSuite.Services
                                 Publisher = app.GetValue("Publisher")?.ToString() ?? "",
                                 InstallDate = app.GetValue("InstallDate")?.ToString() ?? "",
                                 SizeBytes = sizeBytes,
-                                UninstallString = app.GetValue("UninstallString")?.ToString() ?? ""
+                                UninstallString = uninstall,
+                                DisplayIcon = displayIcon
                             });
                         }
                         catch (Exception ex)
                         {
                             Serilog.Log.Warning(ex,
-                                "[App] Errore lettura singola app. Hive={Hive}, SubKey={SubKey}",
+                                "[App] Chiave di registro corrotta o illeggibile — elemento saltato. Hive={Hive}, SubKey={SubKey}",
                                 hiveLabel, sub);
+                            continue;
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Serilog.Log.Warning(ex,
-                        "[App] Errore apertura ramo Uninstall. Hive={Hive}, Path={Path}",
-                        hiveLabel, relativePath);
                 }
             }
 
@@ -254,6 +274,18 @@ namespace SysSuite.Services
             ReadHive(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU");
 
             return result.OrderBy(a => a.Name).ToList();
+        }
+
+        /// <summary>
+        /// Avvia il flusso di disinstallazione (finestra visibile, tipicamente con richiesta UAC).
+        /// </summary>
+        public async Task UninstallAppAsync(string uninstallString,
+            CancellationToken cancellationToken = default)
+        {
+            var (fileName, arguments) = UninstallCommandParser.SplitExecutableAndArguments(uninstallString);
+            if (string.IsNullOrWhiteSpace(fileName))
+                throw new ArgumentException("Impossibile ricavare l'eseguibile di disinstallazione.", nameof(uninstallString));
+            await ProcessRunner.RunVisibleAsync(fileName, arguments, cancellationToken).ConfigureAwait(false);
         }
 
         public List<InstalledApp> GetUnusedApps(int minDays = 90)
