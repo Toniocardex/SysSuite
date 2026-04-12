@@ -15,6 +15,8 @@
 
     <!-- WinUI 3 + Windows App SDK -->
     <OutputType>WinExe</OutputType>
+    <!-- AppHost nativo SysSuite.exe accanto al .dll (doppio clic / collegamenti) -->
+    <UseAppHost>true</UseAppHost>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>SysSuite</RootNamespace>
@@ -117,6 +119,30 @@
     </ItemGroup>
     <RemoveDir Directories="%(_LangDirs.FullPath)" Condition="&#xA;        '%(Filename)' != 'it-IT' And&#xA;        '%(Filename)' != 'en-US' And&#xA;        '%(Filename)' != 'fr-FR' And&#xA;        '%(Filename)' != 'de-DE' And&#xA;        '%(Filename)' != 'es-ES' And&#xA;        '%(Filename)' != 'da-DK'" />
     <Message Text="Lingua rimossa dalla dist: %(_LangDirs.Filename)" Importance="normal" Condition="&#xA;        '%(Filename)' != 'it-IT' And&#xA;        '%(Filename)' != 'en-US' And&#xA;        '%(Filename)' != 'fr-FR' And&#xA;        '%(Filename)' != 'de-DE' And&#xA;        '%(Filename)' != 'es-ES' And&#xA;        '%(Filename)' != 'da-DK'" />
+  </Target>
+
+  <!--
+    Build Debug riuscita: avvio automatico dell'app per test (solo Windows, no CI).
+    Disattiva: dotnet build -p:LaunchAppAfterBuild=false
+    Nota: con SysSuite ancora in esecuzione la build può avvisare (MSB3026) copiando SysSuite.exe: chiudi l'app prima di ricompilare.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <LaunchAppAfterBuild Condition="'$(LaunchAppAfterBuild)' == ''">true</LaunchAppAfterBuild>
+  </PropertyGroup>
+
+  <Target Name="LaunchAppAfterBuild"
+          AfterTargets="Build"
+          Condition="'$(LaunchAppAfterBuild)' == 'true'
+            and '$(Configuration)' == 'Debug'
+            and '$(DesignTimeBuild)' != 'true'
+            and Exists('$(TargetPath)')
+            and $([MSBuild]::IsOsPlatform('Windows'))
+            and '$(GITHUB_ACTIONS)' != 'true'
+            and '$(TF_BUILD)' != 'true'
+            and '$(CI)' != 'true'">
+    <Message Text="LaunchAppAfterBuild: avvio SysSuite.exe (o fallback dotnet exec)" Importance="high" />
+    <Exec Command="cmd /c if exist &quot;$(TargetDir)$(AssemblyName).exe&quot; (start &quot;&quot; &quot;$(TargetDir)$(AssemblyName).exe&quot;) else (start &quot;&quot; /D &quot;$(TargetDir)&quot; dotnet exec &quot;$(TargetPath)&quot;)"
+          IgnoreExitCode="true" />
   </Target>
 
 </Project>

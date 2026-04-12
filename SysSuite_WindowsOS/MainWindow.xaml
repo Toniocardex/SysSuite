@@ -165,7 +165,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="12" Padding="0,9">
                                 <FontIcon
                                     FontFamily="Segoe Fluent Icons"
-                                    Glyph="&#xE9F9;"
+                                    Glyph="&#xE9D9;"
                                     FontSize="15"
                                     Foreground="#7A8BA8"/>
                                 <TextBlock
@@ -296,7 +296,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="12" Padding="0,9">
                                 <FontIcon
                                     FontFamily="Segoe Fluent Icons"
-                                    Glyph="&#xE8B8;"
+                                    Glyph="&#xE9F5;"
                                     FontSize="15"
                                     Foreground="#7A8BA8"/>
                                 <TextBlock
@@ -346,7 +346,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="12" Padding="0,9">
                                 <FontIcon
                                     FontFamily="Segoe Fluent Icons"
-                                    Glyph="&#xE8BB;"
+                                    Glyph="&#xF6FA;"
                                     FontSize="15"
                                     Foreground="#7A8BA8"/>
                                 <TextBlock

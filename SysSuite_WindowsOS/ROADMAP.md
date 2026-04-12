@@ -11,16 +11,25 @@ Traccia **v2.1 (Refined)** — prestazioni native e ripristino: sezione dedicata
 Decisione prodotto: layout **“Real-Time First”** (LiveCharts continui RAM/rete accanto a donut disco/GPU) **non accettato dal cliente**; ripristinato design **a griglia** con card “modulo” e polling sobrio.
 
 ### Layout & file
-- **`Views/DashboardPage.xaml`**: griglia **riga 1** tre colonne — **Sistema operativo** | **Processore** | **Memoria RAM**; **riga 2** due colonne — **Archiviazione** | **Scheda video**. Sezione **Moduli disponibili** invariata sotto.
-- Card: `SysSurfaceBrush`, `SysBorderSubtleBrush`, `CornerRadius="8"`, `Margin="10"`, `Padding="16"` (aspetto modulo rispetto a `SysBGBrush`).
-- **`HardwareSnapshotView`** rimosso: contenuto unificato nella Dashboard.
+- **`Views/DashboardPage.xaml`**: griglia **riga 1** — **Sistema operativo** | **Processore** | **Memoria RAM**; **riga 2** — **Archiviazione** | **Scheda video**; sezione **Moduli disponibili** sotto.
+- **Cyber / Dark (solo XAML, `HubViewModel` invariato)**: sfondo pagina `#0F111A`; card hardware **`DashHardwareCardStyle`** — `Background="#1C1F2B"`, `CornerRadius="16"`, `BorderBrush="#33ffffff"`, `Padding="20"`, `ThemeShadow`; testi secondari **`#A0A0A0`**; **`FontIcon`** (Segoe Fluent Icons) su card e tile moduli.
+- **CPU**: `HubViewModel` **non** espone percentuale CPU in tempo reale (solo nome/core/freq WMI); card **Processore** = StackPanel come **Sistema operativo** (niente anello DXGI/GPU sulla CPU).
+- **RAM**: stesso ritmo delle card OS/CPU; sezione **USO MEMORIA** + **`ProgressRing`** nativo 80×80 (`RamUsedPercentValue` / testo centrato).
+- **Archiviazione**: donut **`PieChart`** + **`ProgressRing`** verde (`DiskUsedPercentValue`); temperature/salute da `StorageHealthService` (timer 30 s).
+- **GPU “vetrina”**: bordo `GpuBrandBrush`, percentuale DXGI grande, testo VRAM; **`ProgressBar`** `Height="12"` / `CornerRadius="6"` su `GpuUsagePercentValue` (card senza `ProgressRing` dedicato).
+- **Moduli ↔ sidebar**: stesse glifi tra **`DashboardPage.xaml`** e **`MainWindow.xaml`** dove applicabile (es. Monitor **`E9D9`**, Pulizia Browser **`F6FA`**, Driver **`E9F5`**, Processore card **`EEA1`**); badge **LIVE** su Monitor con **`SysBadgeAccent`** (accent verde app).
+- **`HardwareSnapshotView`** rimosso in precedenza: contenuto unificato nella Dashboard.
 - **`Views/DashboardPage.xaml.cs`**: `ViewModel = GetRequiredService<HubViewModel>()` **prima** di `InitializeComponent()` (richiesto per `x:Bind` verso `ViewModel`).
 
 ### Performance & timer (`HubViewModel.cs`)
-- **Niente** donut LiveCharts per RAM né polling 1,5 s su metriche disco/RAM come prima iterazione “live”.
-- **Disco**: solo card Archiviazione — **`LiveChartsCore` `PieChart`** (donut usato/libero), serie `DiskDonutSeries`; **`DispatcherTimer` 30 s** → `SystemInfo.RefreshDiskVolumeOnly()` + aggiornamento testi/`DiskDonutSeries`/`DiskUsedPercentValue`.
-- **GPU**: metriche DXGI via **`GpuMonitorService`**, timer **10 s** (`ApplyGpuSlowSampleToUi`) — testi + `ProgressBar` VRAM, **senza** grafico live aggiuntivo.
-- **RAM**: snapshot al load / dopo `LoadDashboardDataAsync` (boost, RAM optimizer), `ProgressBar` lineare; proprietà strutturate CPU: `DashboardCpuName`, `DashboardCpuCoresLine`, `DashboardCpuFreqLine`.
+- **Niente** donut LiveCharts per RAM né polling aggressivo “live-first” su disco/RAM (decisione prodotto: vedi intestazione sezione).
+- **Disco**: card Archiviazione — **`LiveChartsCore` `PieChart`** + `DiskDonutSeries`; **`DispatcherTimer` 30 s** → `RefreshDiskVolumeUiAsync` / testi / serie / `DiskUsedPercentValue` + letture **`StorageHealthService`**.
+- **GPU**: **`GpuMonitorService`** DXGI, timer **10 s** — `GpuUsagePercentage`, `GpuUsagePercentValue`, `GpuUsedVram`, `GpuBrandBrush`.
+- **RAM**: snapshot al load / dopo azioni boost & RAM optimizer; `RamUsedPercentValue` / testi; CPU solo proprietà testuali (`DashboardCpuName`, `DashboardCpuCoresLine`, `DashboardCpuFreqLine`).
+
+### Dev workflow — `SysSuite.csproj`
+- **`UseAppHost`**: `true` → in output compare **`SysSuite.exe`** (oltre al `.dll`) per avvio diretto / collegamenti.
+- **`LaunchAppAfterBuild`**: dopo build **Debug** riuscita su Windows avvio **scollegato** (`cmd /c start …` verso `SysSuite.exe`, fallback `dotnet exec` sul `.dll`); disattiva con **`-p:LaunchAppAfterBuild=false`**; non eseguito se **`CI`** / **`GITHUB_ACTIONS`** / **`TF_BUILD`**.
 
 ### Binding WinUI
 - Dashboard usa **`x:Bind ViewModel.…`** (code-behind = `DashboardPage`); testi popolati dopo `GatherAll` → **`Mode=OneWay`** (non `OneTime` sul primo paint: altrimenti restano `—` / `N/D` finché la pagina non viene ricreata).
@@ -32,7 +41,7 @@ Decisione prodotto: layout **“Real-Time First”** (LiveCharts continui RAM/re
 - XAML: `Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"` su icona card GPU e sulla `ProgressBar` VRAM.
 
 ### Repository
-- Commit di riferimento su `main`: messaggio tipo *«Dashboard: layout griglia, donut disco 30s, GPU brand color e x:Bind»* (rimozione `HardwareSnapshotView`, modifiche sopra).
+- Commit di riferimento su `main`: evoluzione *Dashboard Cyber/Dark*, icone **FontIcon** allineate dashboard/sidebar, card Processore senza DXGI, RAM/disk rings, target **`LaunchAppAfterBuild`**, **`UseAppHost`** per `.exe`.
 
 ---
 
