@@ -436,7 +436,10 @@ namespace SysSuite.Views
             RefreshScheduleStatus();
         }
 
-                private void BtnClearLog_Click(object s, RoutedEventArgs e) => TxtLog.Text = "";
+        private void LogCopyMenu_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) =>
+            LogClipboardHelper.CopyToClipboard(TxtLog.Text);
+
+        private void BtnClearLog_Click(object s, RoutedEventArgs e) => TxtLog.Text = "";
 
         private void AppendLog(string msg, string type) =>
             DispatcherQueue.TryEnqueue(() =>

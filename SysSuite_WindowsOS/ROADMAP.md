@@ -36,6 +36,32 @@ Decisione prodotto: layout **“Real-Time First”** (LiveCharts continui RAM/re
 
 ---
 
+## Contesto memorizzato: Sub-Zero — Rete, potenza, log, storage nativo (v1.5.x+)
+
+Standard **Sub-Zero**: dove richiesto, **`SystemRestoreService.CreateRestorePointAsync`** prima di modifiche invasive al sistema; niente WMI per i nuovi percorsi storage dashboard (solo `DeviceIoControl` / volume IOCTL).
+
+### Network Booster (TCP/IP gaming)
+- [x] **`Services/NetworkOptimizationService`**: punto di ripristino *«SysSuite Network Optimization»*; registry `HKLM\…\Tcpip\Parameters\Interfaces` (tutte le sottochiavi: `TcpAckFrequency`, `TCPNoDelay`, `TcpDelAckTicks`); `HKLM\SOFTWARE\Microsoft\MSMQ\Parameters\TCPNoDelay`; `ProcessRunner` → `ipconfig /flushdns`.
+- [x] **`NetworkViewModel`**: `OptimizeNetworkCommand`; **`NetworkPage`**: pulsante **Ottimizza**; toast successo (`ToastHelper`).
+- [x] DI: `App.xaml.cs` registra `NetworkOptimizationService`.
+
+### Power Management & CPU parking
+- [x] **`Services/PowerOptimizationService`**: ripristino *«SysSuite Power Optimization»*; `powercfg -duplicatescheme` / `-setactive` (Ultimate / fallback Prestazioni elevate); registry core parking `ValueMax`/`ValueMin` = 0.
+- [x] **`GamingViewModel`**: `OptimizePowerCommand`; card Gaming pulsante **Ottimizza** (tooltip sblocco potenza); toast.
+- [x] DI: `PowerOptimizationService` singleton.
+
+### Log: selezione e copia (WinUI)
+- [x] **`Core/LogClipboardHelper`**: `DataPackage` + `Clipboard.SetContent`, toast esito.
+- [x] **`TextBlock`**: `IsTextSelectionEnabled="True"` sui blocchi log; **`Border.ContextFlyout`** → `MenuFlyoutItem` **Copia log** + `SymbolIcon Copy` su **Gaming**, **Network**, **Browser**, **MainSuite** (log ottimizzazione).
+
+### Dashboard — salute disco nativa (no WMI)
+- [x] **`Interop/NtStorage.cs`**: `LibraryImport` `kernel32` (`CreateFileW`, `DeviceIoControl`, `CloseHandle`); `IOCTL_STORAGE_QUERY_PROPERTY`; query temperatura dispositivo/adapter; query NVMe log health (TBW / `%` usura); `IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS` per mappare il volume di sistema (`C:`) → **`PhysicalDriveN`** (non più fisso `PhysicalDrive0`).
+- [x] **`Services/StorageHealthService`**: lettura sul disco fisico risolto; integrazione solo nel **`RefreshDiskVolumeUiAsync`** (stesso timer **30 s** del donut disco).
+- [x] **`HubViewModel`**: `DiskTemperature`, `DiskHealth`; **`DashboardPage.xaml`**: righe card Archiviazione (icone termometro / salute).
+- [x] DI: `StorageHealthService` singleton.
+
+---
+
 ## ✅ Livello 1: Sicurezza (Logging & Exception Handling) — Completato
 
 *(Allineato alla release v1.4.0 — logging strutturato e gestione errori a livello applicazione.)*

@@ -207,8 +207,19 @@
                         <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Click="BtnClearLog_Click"/>
                     </StackPanel>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" x:Name="LogScroll">
-                        <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12"
-                            Foreground="#7A8BA8" TextWrapping="Wrap" Text="Pronto."/>
+                        <Border Background="Transparent">
+                            <Border.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="Copia log" Click="LogCopyMenu_Click">
+                                        <MenuFlyoutItem.Icon>
+                                            <SymbolIcon Symbol="Copy"/>
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Border.ContextFlyout>
+                            <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12"
+                                Foreground="#7A8BA8" TextWrapping="Wrap" Text="Pronto." IsTextSelectionEnabled="True"/>
+                        </Border>
                     </ScrollViewer>
                 </Grid>
             </Border>

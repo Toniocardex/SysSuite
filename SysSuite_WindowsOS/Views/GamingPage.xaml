@@ -30,6 +30,11 @@
                     </StackPanel>
                     <TextBlock Text="Attivando: piano Ultimate Performance, HAGS, Nagle off, servizi Xbox sospesi, aggiornamenti sospesi."
                         Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
+                    <Button Content="Ottimizza" Style="{StaticResource SysButtonSecondary}" MinWidth="140"
+                        HorizontalAlignment="Left"
+                        Command="{Binding OptimizePowerCommand}"
+                        IsEnabled="{Binding IsOptimizePowerButtonEnabled}"
+                        ToolTipService.ToolTip="Sblocca potenza: duplica Ultimate Performance, attiva il piano, azzera core parking nel registro (richiede Admin)."/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <ProgressRing Width="32" Height="32" IsActive="{Binding IsBusy}" Visibility="{Binding BusyRingVisibility}"/>
@@ -56,8 +61,19 @@
                     <Button Content="Pulisci" Style="{StaticResource SysButtonGhost}" Command="{Binding ClearLogCommand}"/>
                 </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8"
-                        TextWrapping="Wrap" Text="{Binding LogText}"/>
+                    <Border Background="Transparent">
+                        <Border.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Copia log" Click="LogCopyMenu_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <SymbolIcon Symbol="Copy"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Border.ContextFlyout>
+                        <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8"
+                            TextWrapping="Wrap" Text="{Binding LogText}" IsTextSelectionEnabled="True"/>
+                    </Border>
                 </ScrollViewer>
             </Grid>
         </Border>

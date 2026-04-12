@@ -64,8 +64,19 @@
                             Command="{Binding ClearLogCommand}"/>
                 </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8" TextWrapping="Wrap"
-                        Text="{Binding LogText}"/>
+                    <Border Background="Transparent">
+                        <Border.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Copia log" Click="LogCopyMenu_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <SymbolIcon Symbol="Copy"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Border.ContextFlyout>
+                        <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#7A8BA8" TextWrapping="Wrap"
+                            Text="{Binding LogText}" IsTextSelectionEnabled="True"/>
+                    </Border>
                 </ScrollViewer>
             </Grid>
         </Border>

@@ -36,13 +36,16 @@ namespace SysSuite.ViewModels
             new(Color.FromArgb(255, 59, 158, 255));
 
         private readonly NetworkService _net;
+        private readonly NetworkOptimizationService _networkOptimization;
         private readonly DispatcherQueue _dispatcher = DispatcherQueue.GetForCurrentThread()
             ?? throw new InvalidOperationException("NetworkViewModel must be created on the UI thread.");
 
-        public NetworkViewModel(NetworkService net)
+        public NetworkViewModel(NetworkService net, NetworkOptimizationService networkOptimization)
         {
             _net = net;
+            _networkOptimization = networkOptimization;
             _net.Log += OnServiceLog;
+            _networkOptimization.Log += OnServiceLog;
             PingResultBrush = PingOkBrush;
             SpeedResultBrush = SpeedDefaultBrush;
         }
@@ -145,6 +148,19 @@ namespace SysSuite.ViewModels
             try { await work().ConfigureAwait(true); }
             catch (Exception ex) { AppendLogLine(ex.Message, "err"); }
             finally { IsNetworkOptBusy = false; }
+        }
+
+        [RelayCommand]
+        private async Task OptimizeNetworkAsync()
+        {
+            if (!CheckAdmin("Network Booster", AppendLogLine)) return;
+            await RunNetworkOptAsync(async () =>
+            {
+                await _networkOptimization.OptimizeForGamingAsync().ConfigureAwait(true);
+                ToastHelper.SendSuccess(
+                    "SysSuite One — Rete",
+                    "Network Booster: ottimizzazione TCP/IP e DNS completata.");
+            }).ConfigureAwait(true);
         }
 
         [RelayCommand]

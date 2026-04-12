@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SysSuite;
+using SysSuite.Core;
 using SysSuite.ViewModels;
 
 namespace SysSuite.Views
@@ -11,6 +13,12 @@ namespace SysSuite.Views
         {
             InitializeComponent();
             DataContext = App.Services.GetRequiredService<NetworkViewModel>();
+        }
+
+        private void LogCopyMenu_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is NetworkViewModel vm)
+                LogClipboardHelper.CopyToClipboard(vm.LogText);
         }
     }
 }

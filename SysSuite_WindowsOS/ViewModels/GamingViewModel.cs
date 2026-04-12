@@ -18,13 +18,16 @@ namespace SysSuite.ViewModels
             new(Color.FromArgb(255, 255, 90, 90));
 
         private readonly GamingService _gaming;
+        private readonly PowerOptimizationService _powerOptimization;
         private readonly DispatcherQueue _dispatcher = DispatcherQueue.GetForCurrentThread()
             ?? throw new InvalidOperationException("GamingViewModel must be created on the UI thread.");
 
-        public GamingViewModel(GamingService gaming)
+        public GamingViewModel(GamingService gaming, PowerOptimizationService powerOptimization)
         {
             _gaming = gaming;
+            _powerOptimization = powerOptimization;
             _gaming.Log += OnServiceLog;
+            _powerOptimization.Log += OnServiceLog;
 
             GamingModeActive = SettingsService.Load().GamingModeActive;
 
@@ -42,6 +45,7 @@ namespace SysSuite.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsActivateButtonEnabled))]
         [NotifyPropertyChangedFor(nameof(IsDeactivateButtonEnabled))]
+        [NotifyPropertyChangedFor(nameof(IsOptimizePowerButtonEnabled))]
         [NotifyPropertyChangedFor(nameof(BusyRingVisibility))]
         private bool _isBusy;
 
@@ -57,6 +61,8 @@ namespace SysSuite.ViewModels
         public bool IsActivateButtonEnabled => !IsBusy && !GamingModeActive;
 
         public bool IsDeactivateButtonEnabled => !IsBusy && GamingModeActive;
+
+        public bool IsOptimizePowerButtonEnabled => !IsBusy;
 
         public Visibility BusyRingVisibility =>
             IsBusy ? Visibility.Visible : Visibility.Collapsed;
@@ -82,6 +88,29 @@ namespace SysSuite.ViewModels
             if (AdminHelper.IsAdmin()) return true;
             log("'" + label + "' richiede Admin. Usa 'Riavvia come Admin' in basso a destra.", "warn");
             return false;
+        }
+
+        [RelayCommand]
+        private async Task OptimizePowerAsync()
+        {
+            if (!CheckAdmin("Ottimizza potenza", AppendLogLine)) return;
+
+            IsBusy = true;
+            try
+            {
+                await _powerOptimization.OptimizeAsync().ConfigureAwait(true);
+                ToastHelper.SendSuccess(
+                    "SysSuite One — Potenza",
+                    "Piano prestazioni elevato e core parking applicati.");
+            }
+            catch (Exception ex)
+            {
+                AppendLogLine("Errore: " + ex.Message, "err");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         [RelayCommand]

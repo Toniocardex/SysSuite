@@ -38,7 +38,10 @@ namespace SysSuite
             services.AddSingleton<CleanupService>();
             services.AddSingleton<RamOptimizerService>();
             services.AddSingleton<GpuMonitorService>();
+            services.AddSingleton<StorageHealthService>();
             services.AddSingleton<SystemRestoreService>();
+            services.AddSingleton<NetworkOptimizationService>();
+            services.AddSingleton<PowerOptimizationService>();
             services.AddTransient<SystemInfo>();
             services.AddTransient<DiscoViewModel>();
             services.AddTransient<BatteryViewModel>();
@@ -65,7 +68,8 @@ namespace SysSuite
                 sp.GetRequiredService<BrowserService>(),
                 sp.GetRequiredService<ProcessManager>(),
                 sp.GetRequiredService<RamOptimizerService>(),
-                sp.GetRequiredService<GpuMonitorService>()));
+                sp.GetRequiredService<GpuMonitorService>(),
+                sp.GetRequiredService<StorageHealthService>()));
             Services = services.BuildServiceProvider();
         }
 

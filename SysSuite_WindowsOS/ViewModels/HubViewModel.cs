@@ -33,6 +33,7 @@ namespace SysSuite.ViewModels
         private readonly ProcessManager _processManager;
         private readonly RamOptimizerService _ramOptimizer;
         private readonly GpuMonitorService _gpuMonitor;
+        private readonly StorageHealthService _storageHealth;
 
         private readonly DispatcherTimer _gpuSlowTimer;
         private readonly DispatcherTimer _diskRefreshTimer;
@@ -60,7 +61,8 @@ namespace SysSuite.ViewModels
             BrowserService browser,
             ProcessManager processManager,
             RamOptimizerService ramOptimizer,
-            GpuMonitorService gpuMonitor)
+            GpuMonitorService gpuMonitor,
+            StorageHealthService storageHealth)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _systemInfo = systemInfo ?? throw new ArgumentNullException(nameof(systemInfo));
@@ -69,6 +71,7 @@ namespace SysSuite.ViewModels
             _processManager = processManager;
             _ramOptimizer = ramOptimizer;
             _gpuMonitor = gpuMonitor ?? throw new ArgumentNullException(nameof(gpuMonitor));
+            _storageHealth = storageHealth ?? throw new ArgumentNullException(nameof(storageHealth));
 
             _gpuSlowTimer = new DispatcherTimer { Interval = GpuRefreshInterval };
             _gpuSlowTimer.Tick += OnGpuSlowTimerTick;
@@ -130,6 +133,12 @@ namespace SysSuite.ViewModels
         [ObservableProperty] private SolidColorBrush _gpuBrandBrush = GpuBrandBrushDefault;
 
         [ObservableProperty] private string _systemDiskModel = "N/D";
+
+        /// <summary>Temperatura disco (lettura nativa), aggiornata col timer disco 30 s.</summary>
+        [ObservableProperty] private string _diskTemperature = "—";
+
+        /// <summary>Salute / TBW host (NVMe), aggiornata col timer disco 30 s.</summary>
+        [ObservableProperty] private string _diskHealth = "—";
 
         [ObservableProperty] private string _ramOptimizerStatusText = "Caricamento...";
 
@@ -289,9 +298,14 @@ namespace SysSuite.ViewModels
 
             try
             {
+                (int? tempC, byte? pctUsed, double? hostWriteTb) metrics = (null, null, null);
                 try
                 {
-                    await Task.Run(() => _systemInfo.RefreshDiskVolumeOnly()).ConfigureAwait(false);
+                    await Task.Run(() =>
+                    {
+                        _systemInfo.RefreshDiskVolumeOnly();
+                        metrics = _storageHealth.TryReadPrimaryDriveMetrics();
+                    }).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -307,6 +321,8 @@ namespace SysSuite.ViewModels
                     DiskTotalText = _systemInfo.DiskTotalGB + " GB totali — " + diskUsedPct.ToString("0.#") + "% usato";
                     DiskUsedPercentValue = diskUsedPct;
                     DiskDonutSeries = BuildDiskDonutSeries(diskUsedPct);
+                    DiskTemperature = FormatDiskTemperature(metrics.tempC);
+                    DiskHealth = FormatDiskHealth(metrics.pctUsed, metrics.hostWriteTb);
                 });
             }
             finally
@@ -412,6 +428,21 @@ namespace SysSuite.ViewModels
             if (ts < TimeSpan.Zero)
                 ts = TimeSpan.Zero;
             return ts.Days + "g " + ts.Hours + "h " + ts.Minutes + "m";
+        }
+
+        private static string FormatDiskTemperature(int? celsius) =>
+            celsius.HasValue ? celsius.Value + " °C" : "—";
+
+        private static string FormatDiskHealth(byte? percentageUsed, double? hostWriteTb)
+        {
+            if (!percentageUsed.HasValue && !hostWriteTb.HasValue)
+                return "—";
+            string part = percentageUsed.HasValue
+                ? "Residuo stimato " + Math.Clamp(100 - percentageUsed.Value, 0, 100) + "%"
+                : "Salute: n/d";
+            if (hostWriteTb.HasValue)
+                part += " · ~" + hostWriteTb.Value.ToString("0.#") + " TB host";
+            return part;
         }
 
         private static string FormatBytes(long bytes)
