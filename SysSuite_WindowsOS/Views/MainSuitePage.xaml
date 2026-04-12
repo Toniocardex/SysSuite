@@ -9,7 +9,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <!-- Auto: evita Height="*" dentro ScrollViewer (misura infinita / loop di layout al cambio tab). -->
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Titolo + operazioni lunghe (non blocca UI) -->
@@ -47,7 +48,8 @@
         <Grid Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <!-- Altezza fissa: area log con ScrollViewer interno non deve usare * sotto ScrollViewer esterno. -->
+                <RowDefinition Height="300"/>
             </Grid.RowDefinitions>
 
             <!-- ═══ TAB 0: PULIZIA ═══ -->

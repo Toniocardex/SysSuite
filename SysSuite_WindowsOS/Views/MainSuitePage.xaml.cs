@@ -43,11 +43,12 @@ namespace SysSuite.Views
             // Ripristina ultima tab visitata
             Loaded += async (_, _) =>
             {
+                // Permette al layout della tab iniziale di completarsi prima di restore/piano energetico.
+                await Task.Yield();
                 var s = SettingsService.Load();
                 int startTab = s.LastOptimizationTab;
                 SwitchTab(Math.Clamp(startTab, 0, _tabs.Length - 1));
                 await LoadServicesAsync();
-                await RefreshCurrentPlanAsync();
                 RefreshScheduleStatus();
             };
         }
@@ -72,6 +73,24 @@ namespace SysSuite.Views
 
             // Persiste la tab corrente
             SettingsService.Update(s => s.LastOptimizationTab = idx);
+
+            // Aggiorna piano energetico quando si apre Prestazioni (non solo al primo Loaded della pagina).
+            if (idx == 1)
+                _ = RefreshCurrentPlanWhenIdleAsync();
+        }
+
+        /// <summary>Legge il piano su thread pool e aggiorna la UI senza bloccare il dispatcher.</summary>
+        private async Task RefreshCurrentPlanWhenIdleAsync()
+        {
+            try
+            {
+                string plan = await Task.Run(() => _perf.GetCurrentPlan()).ConfigureAwait(false);
+                DispatcherQueue.TryEnqueue(() => TxtCurrentPlan.Text = "Piano: " + plan);
+            }
+            catch
+            {
+                DispatcherQueue.TryEnqueue(() => TxtCurrentPlan.Text = "Piano: n/d");
+            }
         }
 
                 // ── Pulizia ────────────────────────────────────────────

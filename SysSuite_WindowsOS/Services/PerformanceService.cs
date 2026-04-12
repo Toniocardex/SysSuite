@@ -35,9 +35,18 @@ namespace SysSuite.Services
 
         public async Task<string> GetCurrentPlanAsync(CancellationToken cancellationToken = default)
         {
-            var (_, output) = await ProcessRunner.RunCaptureAsync("powercfg.exe", "/getactivescheme", cancellationToken).ConfigureAwait(false);
-            var m = System.Text.RegularExpressions.Regex.Match(output, @"\((.+)\)");
-            return m.Success ? m.Groups[1].Value : "Sconosciuto";
+            try
+            {
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                linked.CancelAfter(TimeSpan.FromSeconds(10));
+                var (_, output) = await ProcessRunner.RunCaptureAsync("powercfg.exe", "/getactivescheme", linked.Token).ConfigureAwait(false);
+                var m = System.Text.RegularExpressions.Regex.Match(output, @"\((.+)\)");
+                return m.Success ? m.Groups[1].Value : "Sconosciuto";
+            }
+            catch (OperationCanceledException)
+            {
+                return "n/d (timeout powercfg)";
+            }
         }
 
         public void ReduceAnimations()
