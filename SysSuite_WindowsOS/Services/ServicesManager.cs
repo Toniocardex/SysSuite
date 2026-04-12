@@ -255,30 +255,50 @@ namespace SysSuite.Services
             }
         }
 
-        public Task EnableAsync(string serviceName, string startMode = "auto",
+        public async Task EnableAsync(string serviceName, string startMode = "auto",
             CancellationToken cancellationToken = default)
         {
             try
             {
-                SetStartMode(serviceName, startMode);
-                using var svc = new ServiceController(serviceName);
-                if (svc.Status != ServiceControllerStatus.Running)
-                    svc.Start();
+                // sc.exe e ServiceController.Start() sono bloccanti: eseguire su thread pool.
+                await Task.Run(() =>
+                {
+                    SetStartMode(serviceName, startMode);
+                    using var svc = new ServiceController(serviceName);
+                    if (svc.Status != ServiceControllerStatus.Running)
+                        svc.Start();
+                }, cancellationToken).ConfigureAwait(false);
                 Emit($"Abilitato: {serviceName}", "ok");
             }
             catch (Exception ex)
             {
                 Emit($"Errore {serviceName}: {ex.Message}", "warn");
             }
-
-            return Task.CompletedTask;
         }
 
         public async Task RestartAsync(string serviceName, CancellationToken cancellationToken = default)
         {
-            await DisableAsync(serviceName, cancellationToken).ConfigureAwait(false);
+            // Stop e poi Start senza toccare il tipo di avvio (DisableAsync lo impostava su "disabled").
+            await Task.Run(() =>
+            {
+                using var svc = new ServiceController(serviceName);
+                if (svc.Status != ServiceControllerStatus.Stopped)
+                {
+                    svc.Stop();
+                    svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+                }
+            }, cancellationToken).ConfigureAwait(false);
+
             await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-            await EnableAsync(serviceName, "auto", cancellationToken).ConfigureAwait(false);
+
+            await Task.Run(() =>
+            {
+                using var svc = new ServiceController(serviceName);
+                if (svc.Status != ServiceControllerStatus.Running)
+                    svc.Start();
+            }, cancellationToken).ConfigureAwait(false);
+
+            Emit($"Riavviato: {serviceName}", "ok");
         }
 
         public ServiceControllerStatus GetStatus(string serviceName)

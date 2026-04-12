@@ -70,7 +70,15 @@ namespace SysSuite.Services
         {
             Emit("=== RIPRISTINO MODALITA' STANDARD ===", "head");
 
-            await _perf.SetBalancedPlanAsync(cancellationToken).ConfigureAwait(false);
+            // Ripristina il piano precedente all'attivazione Gaming Mode.
+            // Se era Ultimate Performance lo reimpostiamo, altrimenti torniamo a Balanced.
+            bool wasUltimate = _prevPowerPlan.Contains("Ultimate", StringComparison.OrdinalIgnoreCase)
+                            || _prevPowerPlan.Contains("Prestazioni elevate", StringComparison.OrdinalIgnoreCase)
+                            || _prevPowerPlan.Contains("High performance", StringComparison.OrdinalIgnoreCase);
+            if (wasUltimate)
+                await _perf.SetUltimatePlanAsync(cancellationToken).ConfigureAwait(false);
+            else
+                await _perf.SetBalancedPlanAsync(cancellationToken).ConfigureAwait(false);
 
             EnableGameMode(false);
 

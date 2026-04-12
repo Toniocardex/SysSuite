@@ -79,12 +79,12 @@ namespace SysSuite.Views
                 _ = RefreshCurrentPlanWhenIdleAsync();
         }
 
-        /// <summary>Legge il piano su thread pool e aggiorna la UI senza bloccare il dispatcher.</summary>
+        /// <summary>Legge il piano con timeout (10 s) e aggiorna la UI senza bloccare il dispatcher.</summary>
         private async Task RefreshCurrentPlanWhenIdleAsync()
         {
             try
             {
-                string plan = await Task.Run(() => _perf.GetCurrentPlan()).ConfigureAwait(false);
+                string plan = await _perf.GetCurrentPlanAsync().ConfigureAwait(false);
                 DispatcherQueue.TryEnqueue(() => TxtCurrentPlan.Text = "Piano: " + plan);
             }
             catch

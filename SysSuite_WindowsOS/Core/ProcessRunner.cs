@@ -27,15 +27,19 @@ namespace SysSuite.Core
             p.WaitForExit();
         }
 
-        /// <summary>Esegue e cattura l'output standard.</summary>
+        /// <summary>Esegue e cattura l'output standard.
+        /// Legge stdout e stderr su thread separati per evitare deadlock
+        /// quando il processo produce output su entrambi i pipe.</summary>
         public static (int ExitCode, string Output) RunCapture(string fileName, string arguments)
         {
             using var p = NewCaptureProcess(fileName, arguments);
             p.Start();
-            string output = p.StandardOutput.ReadToEnd();
-            string _ = p.StandardError.ReadToEnd();
+            // Lettura parallela obbligatoria: leggere prima stdout poi stderr in sequenza
+            // causa deadlock se il buffer di stderr si riempie mentre siamo bloccati su stdout.
+            var stdoutTask = Task.Run(() => p.StandardOutput.ReadToEnd());
+            var stderrTask = Task.Run(() => p.StandardError.ReadToEnd());
             p.WaitForExit();
-            return (p.ExitCode, output);
+            return (p.ExitCode, stdoutTask.GetAwaiter().GetResult());
         }
 
         /// <summary>Versione asincrona di <see cref="Run"/> — non blocca il thread UI.</summary>
