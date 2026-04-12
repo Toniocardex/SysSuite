@@ -41,3 +41,8 @@ SysSuite_WindowsOS/COMPILA_E_FIRMA_VENTANA.bat
 *.log
 *.tmp
 *.temp
+
+## Output diagnostica locale (root repo, non versionare)
+build-out.txt
+buildout.txt
+SysSuite_WindowsOS_logo.png
