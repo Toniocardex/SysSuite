@@ -6,6 +6,36 @@ Traccia **v2.1 (Refined)** — prestazioni native e ripristino: sezione dedicata
 
 ---
 
+## Contesto memorizzato: Dashboard & `HubViewModel` (v1.5.x)
+
+Decisione prodotto: layout **“Real-Time First”** (LiveCharts continui RAM/rete accanto a donut disco/GPU) **non accettato dal cliente**; ripristinato design **a griglia** con card “modulo” e polling sobrio.
+
+### Layout & file
+- **`Views/DashboardPage.xaml`**: griglia **riga 1** tre colonne — **Sistema operativo** | **Processore** | **Memoria RAM**; **riga 2** due colonne — **Archiviazione** | **Scheda video**. Sezione **Moduli disponibili** invariata sotto.
+- Card: `SysSurfaceBrush`, `SysBorderSubtleBrush`, `CornerRadius="8"`, `Margin="10"`, `Padding="16"` (aspetto modulo rispetto a `SysBGBrush`).
+- **`HardwareSnapshotView`** rimosso: contenuto unificato nella Dashboard.
+- **`Views/DashboardPage.xaml.cs`**: `ViewModel = GetRequiredService<HubViewModel>()` **prima** di `InitializeComponent()` (richiesto per `x:Bind` verso `ViewModel`).
+
+### Performance & timer (`HubViewModel.cs`)
+- **Niente** donut LiveCharts per RAM né polling 1,5 s su metriche disco/RAM come prima iterazione “live”.
+- **Disco**: solo card Archiviazione — **`LiveChartsCore` `PieChart`** (donut usato/libero), serie `DiskDonutSeries`; **`DispatcherTimer` 30 s** → `SystemInfo.RefreshDiskVolumeOnly()` + aggiornamento testi/`DiskDonutSeries`/`DiskUsedPercentValue`.
+- **GPU**: metriche DXGI via **`GpuMonitorService`**, timer **10 s** (`ApplyGpuSlowSampleToUi`) — testi + `ProgressBar` VRAM, **senza** grafico live aggiuntivo.
+- **RAM**: snapshot al load / dopo `LoadDashboardDataAsync` (boost, RAM optimizer), `ProgressBar` lineare; proprietà strutturate CPU: `DashboardCpuName`, `DashboardCpuCoresLine`, `DashboardCpuFreqLine`.
+
+### Binding WinUI
+- Dashboard usa **`x:Bind ViewModel.…`** (code-behind = `DashboardPage`); testi popolati dopo `GatherAll` → **`Mode=OneWay`** (non `OneTime` sul primo paint: altrimenti restano `—` / `N/D` finché la pagina non viene ricreata).
+- Donut disco: **`{Binding DiskDonutSeries, Mode=OneWay}`** sul `PieChart` (convenzione LiveCharts).
+
+### User delight — brand GPU
+- **`GpuBrandBrush`** (`SolidColorBrush`): colore da **`GpuMetrics.Name`** ( DXGI ) — NVIDIA `#76B900`, AMD/Radeon `#ED1C24`, Intel `#0071C5`, default `#3B9EFF`.
+- Pennelli **istanze static readonly** condivise; **`TrySetGpuBrandBrushFromAdapterName`** aggiorna solo se cambia il vendor classificato (niente `new SolidColorBrush` ogni 10 s).
+- XAML: `Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"` su icona card GPU e sulla `ProgressBar` VRAM.
+
+### Repository
+- Commit di riferimento su `main`: messaggio tipo *«Dashboard: layout griglia, donut disco 30s, GPU brand color e x:Bind»* (rimozione `HardwareSnapshotView`, modifiche sopra).
+
+---
+
 ## ✅ Livello 1: Sicurezza (Logging & Exception Handling) — Completato
 
 *(Allineato alla release v1.4.0 — logging strutturato e gestione errori a livello applicazione.)*
@@ -24,7 +54,7 @@ Traccia **v2.1 (Refined)** — prestazioni native e ripristino: sezione dedicata
 - [x] **Dependency Injection** (`Microsoft.Extensions.DependencyInjection`): registrazione di servizi e ViewModel in `App.xaml.cs` (`ConfigureServices`)
 - [x] **CommunityToolkit.Mvvm**: `ObservableObject`, `[ObservableProperty]`, `[RelayCommand]` per proprietà osservabili e comandi; logica di business nei ViewModel, non nelle viste
 - [x] **Architettura asincrona e disaccoppiata**: le viste si limitano a `InitializeComponent()` e assegnazione `DataContext` da `App.Services`; operazioni I/O e registry su thread appropriati tramite i servizi
-- [x] **Binding classico** `{Binding ...}` su WinUI (senza `x:Bind` per queste schermate), inclusi `Mode=TwoWay` dove serve (es. Privacy)
+- [x] **Binding** `{Binding ...}` su gran parte delle schermate WinUI; **`DashboardPage`** usa **`x:Bind`** verso `ViewModel` (vedi sezione *Contesto memorizzato: Dashboard*); `Mode=TwoWay` dove serve (es. Privacy)
 - [x] Pagine / moduli portati al pattern MVVM:
   - [x] **BatteryPage** + `BatteryViewModel`
   - [x] **PrivacyPage** (`UserControl` in MainSuite) + `PrivacyViewModel` + `PrivacyService` registrato come singleton
