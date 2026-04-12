@@ -71,6 +71,30 @@ namespace SysSuite.Services
                 : 0;
         }
 
+        /// <summary>Percentuale RAM in uso e MB fisici (GlobalMemoryStatusEx, senza WMI).</summary>
+        public static bool TryGetRamUsedPercent(out double usedPct, out long totalMb, out long freeMb)
+        {
+            var mem = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
+            if (!GlobalMemoryStatusEx(ref mem))
+            {
+                usedPct = 0;
+                totalMb = 0;
+                freeMb = 0;
+                return false;
+            }
+
+            totalMb = (long)(mem.ullTotalPhys / 1_048_576);
+            freeMb = (long)(mem.ullAvailPhys / 1_048_576);
+            if (mem.ullTotalPhys == 0)
+            {
+                usedPct = 0;
+                return false;
+            }
+
+            usedPct = Math.Round((1.0 - (double)mem.ullAvailPhys / mem.ullTotalPhys) * 100.0, 1);
+            return true;
+        }
+
         /// <summary>
         /// Ottimizza la RAM: itera tutti i processi e tenta di svuotarne
         /// il working set. Restituisce i MB liberati (stima: prima - dopo).
@@ -117,7 +141,7 @@ namespace SysSuite.Services
 
             // Attendi che Windows aggiorni la contabilità memoria
             // Nota: chiamare Thread.Sleep è accettabile qui perché Optimize()
-            // viene sempre invocato via Task.Run dal chiamante (HubPage).
+            // viene sempre invocato via Task.Run dal chiamante (es. DashboardPage).
             Thread.Sleep(800);
 
             long after   = GetFreeRamMB();

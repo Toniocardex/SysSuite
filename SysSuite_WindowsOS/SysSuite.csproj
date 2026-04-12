@@ -100,6 +100,7 @@
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
 
   <!-- XAML inclusi automaticamente da SDK e WinUI: non ripetere Page qui (NETSDK1022) -->
@@ -112,25 +113,10 @@
   -->
   <Target Name="RemoveUnwantedLanguageFolders" AfterTargets="Publish">
     <ItemGroup>
-      <_LangDirs Include="$(PublishDir)*/"/>
+      <_LangDirs Include="$(PublishDir)*/" />
     </ItemGroup>
-    <RemoveDir
-      Directories="%(_LangDirs.FullPath)"
-      Condition="
-        '%(Filename)' != 'it-IT' And
-        '%(Filename)' != 'en-US' And
-        '%(Filename)' != 'fr-FR' And
-        '%(Filename)' != 'de-DE' And
-        '%(Filename)' != 'es-ES' And
-        '%(Filename)' != 'da-DK'" />
-    <Message Text="Lingua rimossa dalla dist: %(_LangDirs.Filename)" Importance="normal"
-      Condition="
-        '%(Filename)' != 'it-IT' And
-        '%(Filename)' != 'en-US' And
-        '%(Filename)' != 'fr-FR' And
-        '%(Filename)' != 'de-DE' And
-        '%(Filename)' != 'es-ES' And
-        '%(Filename)' != 'da-DK'" />
+    <RemoveDir Directories="%(_LangDirs.FullPath)" Condition="&#xA;        '%(Filename)' != 'it-IT' And&#xA;        '%(Filename)' != 'en-US' And&#xA;        '%(Filename)' != 'fr-FR' And&#xA;        '%(Filename)' != 'de-DE' And&#xA;        '%(Filename)' != 'es-ES' And&#xA;        '%(Filename)' != 'da-DK'" />
+    <Message Text="Lingua rimossa dalla dist: %(_LangDirs.Filename)" Importance="normal" Condition="&#xA;        '%(Filename)' != 'it-IT' And&#xA;        '%(Filename)' != 'en-US' And&#xA;        '%(Filename)' != 'fr-FR' And&#xA;        '%(Filename)' != 'de-DE' And&#xA;        '%(Filename)' != 'es-ES' And&#xA;        '%(Filename)' != 'da-DK'" />
   </Target>
 
 </Project>

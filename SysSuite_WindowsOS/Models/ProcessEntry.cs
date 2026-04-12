@@ -21,11 +21,12 @@ namespace SysSuite.Models
         private int _pid;
         private string _name = "";
         private double _cpuPercent;
+        private double _lastNotifiedCpuPercent = double.NaN;
         private double _ramMB;
         private int _threads;
         private int _handles;
         private bool _responding;
-        private string _path = "";
+        private string _imagePath = "";
         private string _description = "";
         private DateTime _startTime;
 
@@ -44,14 +45,7 @@ namespace SysSuite.Models
         public double CpuPercent
         {
             get => _cpuPercent;
-            set
-            {
-                // Epsilon più ampio: evita PropertyChanged ogni tick su jitter sotto‑decimale (lista processi).
-                if (Math.Abs(_cpuPercent - value) < 0.02) return;
-                _cpuPercent = value;
-                OnPropertyChanged();
-                RefreshCpuBindings();
-            }
+            set => SetCpuPercentValue(value, forceNotify: false);
         }
 
         public double RamMB
@@ -89,10 +83,20 @@ namespace SysSuite.Models
             }
         }
 
+        /// <summary>Percorso immagine eseguibile (solo <see cref="InitializeFromSample"/> sulla riga in cache).</summary>
+        public string ImagePath => _imagePath;
+
+        /// <summary>Alias di <see cref="ImagePath"/> per campioni da ProcessManager.</summary>
         public string Path
         {
-            get => _path;
-            set { if (_path == value) return; _path = value; OnPropertyChanged(); }
+            get => _imagePath;
+            set
+            {
+                if (_imagePath == value) return;
+                _imagePath = value ?? "";
+                OnPropertyChanged(nameof(Path));
+                OnPropertyChanged(nameof(ImagePath));
+            }
         }
 
         public string Description
@@ -135,20 +139,65 @@ namespace SysSuite.Models
             StartTime = src.StartTime;
         }
 
-        /// <summary>Primo inserimento in cache/lista: copia completa dal campione.</summary>
+        /// <summary>
+        /// Prima associazione riga in cache: imposta <see cref="Name"/> e <see cref="ImagePath"/> (da <c>sample.Path</c>)
+        /// e le altre proprietà statiche; notifica CPU con baseline per throttling 0.2%.
+        /// </summary>
         public void InitializeFromSample(ProcessEntry sample)
         {
-            PID = sample.PID;
-            CopyMetricsFrom(sample);
+            _pid = sample.PID;
+            _name = sample.Name ?? "";
+            _imagePath = sample.Path ?? "";
+            _description = sample.Description ?? "";
+            _startTime = sample.StartTime;
+            _threads = sample.Threads;
+            _handles = sample.Handles;
+            _responding = sample.Responding;
+            _ramMB = sample.RamMB;
+            _cpuPercent = sample.CpuPercent;
+            _lastNotifiedCpuPercent = sample.CpuPercent;
+
+            OnPropertyChanged(nameof(PID));
+            OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(Path));
+            OnPropertyChanged(nameof(Description));
+            OnPropertyChanged(nameof(StartTime));
+            OnPropertyChanged(nameof(Threads));
+            OnPropertyChanged(nameof(Handles));
+            OnPropertyChanged(nameof(Responding));
+            OnPropertyChanged(nameof(RamMB));
+            OnPropertyChanged(nameof(CpuPercent));
+            RefreshCpuBindings();
+            RefreshRespondingBindings();
         }
 
-        /// <summary>Aggiornamento differenziale: solo CPU, RAM e stato (in esecuzione / non risponde).</summary>
+        /// <summary>Solo CPU, RAM e stato; non modifica <see cref="Name"/> né <see cref="ImagePath"/>.</summary>
         public void ApplyDynamicMetricsFrom(ProcessEntry sample)
         {
             if (sample.PID != PID) return;
-            CpuPercent = sample.CpuPercent;
+            SetCpuPercentValue(sample.CpuPercent, forceNotify: false);
             RamMB = sample.RamMB;
             Responding = sample.Responding;
+        }
+
+        private void SetCpuPercentValue(double value, bool forceNotify)
+        {
+            if (Math.Abs(_cpuPercent - value) < 1e-9)
+                return;
+
+            _cpuPercent = value;
+
+            bool significant = forceNotify
+                || double.IsNaN(_lastNotifiedCpuPercent)
+                || Math.Abs(value - _lastNotifiedCpuPercent) >= 0.2;
+
+            if (!significant)
+                return;
+
+            _lastNotifiedCpuPercent = value;
+            OnPropertyChanged(nameof(CpuPercent));
+            RefreshCpuBindings();
         }
 
         private void RefreshCpuBindings()

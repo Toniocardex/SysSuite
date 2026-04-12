@@ -104,9 +104,20 @@ namespace SysSuite.Core
                     Uptime = DateTime.Now - boot;
                 }
 
+                RefreshDiskVolumeOnly();
+            }
+            catch { }
+        }
+
+        /// <summary>Aggiorna solo spazio libero/totale del volume di sistema (senza WMI).</summary>
+        public void RefreshDiskVolumeOnly()
+        {
+            try
+            {
                 string sysDrive = Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\";
                 var drive = new DriveInfo(sysDrive);
                 DiskFreeGB = Math.Round(drive.AvailableFreeSpace / 1073741824.0, 1);
+                DiskTotalGB = Math.Round(drive.TotalSize / 1073741824.0, 1);
             }
             catch { }
         }

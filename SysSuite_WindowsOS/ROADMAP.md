@@ -136,7 +136,12 @@ Obiettivo: ridurre overhead managed dove conta (enumerazioni, monitor) e allinea
 - [x] `MainSuitePage`: `ServicesManager` con `SystemRestoreService` da DI, tab Servizi async (`LoadServicesAsync`), righe `ServiceUiRow`, disable/enable async
 - [x] `GamingService`: costruttore con `SystemRestoreService`, `DisableAsync`/`EnableAsync` per servizi Xbox
 - [x] **Brand / icone:** `Assets/Brand/` — `AppIcon.ico` (multi-size + `ApplicationIcon` + `AppWindow.SetIcon`), `Logo512.png` (sidebar `MainWindow`), **`Logo256.png`** (viste compatte: intestazione **HubPage**, **SettingsPage**); `Content` con copia in output
-- [x] **Monitor — Surgical UI Sync:** `MonitorViewModel` — cache `Dictionary` PID → `ProcessEntry`, niente `ProcessItems.Clear()`, sync differenziale (`SurgicalSyncProcessList`), early-exit se stessi ref/ordine, throttle lista completa 2s se più di 200 processi con aggiornamento metriche leggero sulle righe visibili; `ProcessEntry.CpuPercent` con epsilon 0.02; **MonitorPage** senza `ScrollViewer` esterno su tutta la pagina + `ItemsStackPanel` sul `ListView` per virtualizzazione
+- [x] **Monitor — pipeline UI / CPU (contesto v2.1):**
+  - [x] **Differential update:** `MonitorViewModel.ApplyDifferentialUpdate` — `Dictionary` PID → `ProcessEntry`, niente `ProcessItems.Clear()`; nuovo PID → `InitializeFromSample` + cache + `ObservableCollection`; uscente → `RemoveAt` + cache; esistente → `ApplyDynamicMetricsFrom` (solo metriche dinamiche).
+  - [x] **`BatchingObservableCollection<T>`** (`SysSuite.Collections`): durante `BeginUpdate`/`EndUpdate` niente notifiche intermedie sulla lista; **un solo** `NotifyCollectionChangedAction.Reset` a fine batch **solo** se nel batch ci sono stati **Add o Remove** (coalescenza; Move soppresso senza Reset aggiuntivo, come da regola mandatoria).
+  - [x] **Ordinamento fuori thread UI:** `BuildSortedSnapshot` (filtro + sort + top 150) eseguito sul thread pool **prima** di `_dispatcher.TryEnqueue` — la UI riceve già la lista ordinata.
+  - [x] **`ProcessEntry`:** `InitializeFromSample` imposta `Name` e `ImagePath` (da `sample.Path`) e il resto alla creazione riga in cache; `ApplyDynamicMetricsFrom` **non** tocca nome/percorso; **CPU:** `PropertyChanged` su `CpuPercent` solo se varia di **≥ 0,2%** rispetto all’ultimo valore notificato (altrimenti aggiornamento silenzioso del campo).
+  - [x] **MonitorPage:** niente `ScrollViewer` esterno su tutta la pagina (altezza finita → virtualizzazione); `ListView` con `VirtualizingStackPanel` verticale come `ItemsPanel`.
 
 ### Build
 - [x] `ServicesManager`: buffer SCM come `nint` + blocchi `unsafe` mirati per `NativeMemory`

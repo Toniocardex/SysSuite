@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SkiaSharp;
 using SysSuite;
+using SysSuite.Collections;
 using SysSuite.Models;
 using SysSuite.Services;
 
@@ -59,7 +60,7 @@ namespace SysSuite.ViewModels
         public IEnumerable<ICartesianAxis> ChartXAxes => _chartXAxes;
         public IEnumerable<ICartesianAxis> ChartYAxes => _chartYAxes;
 
-        public ObservableCollection<ProcessEntry> ProcessItems { get; } = new();
+        public BatchingObservableCollection<ProcessEntry> ProcessItems { get; } = new();
 
         /// <param name="dispatcher">Coda del thread UI (es. <c>GetForCurrentThread()</c> solo in <c>ConfigureServices</c>, mai nei Task).</param>
         public MonitorViewModel(DispatcherQueue dispatcher, ProcessManager pm)
@@ -456,58 +457,66 @@ namespace SysSuite.ViewModels
         /// </summary>
         private void ApplyDifferentialUpdate(IReadOnlyList<ProcessEntry> incoming)
         {
-            var incomingPids = new HashSet<int>(incoming.Count);
-            foreach (ProcessEntry s in incoming)
-                incomingPids.Add(s.PID);
-
-            for (int r = ProcessItems.Count - 1; r >= 0; r--)
+            ProcessItems.BeginUpdate();
+            try
             {
-                int pid = ProcessItems[r].PID;
-                if (incomingPids.Contains(pid))
-                    continue;
-                ProcessItems.RemoveAt(r);
-                _processCache.Remove(pid);
-            }
+                var incomingPids = new HashSet<int>(incoming.Count);
+                foreach (ProcessEntry s in incoming)
+                    incomingPids.Add(s.PID);
 
-            for (int i = 0; i < incoming.Count; i++)
-            {
-                ProcessEntry snap = incoming[i];
-                if (!_processCache.TryGetValue(snap.PID, out ProcessEntry? row))
+                for (int r = ProcessItems.Count - 1; r >= 0; r--)
                 {
-                    row = new ProcessEntry();
-                    row.InitializeFromSample(snap);
-                    _processCache[snap.PID] = row;
-                }
-                else
-                {
-                    row.ApplyDynamicMetricsFrom(snap);
-                }
-
-                if (i < ProcessItems.Count && ReferenceEquals(ProcessItems[i], row))
-                    continue;
-
-                int found = -1;
-                for (int j = i; j < ProcessItems.Count; j++)
-                {
-                    if (!ReferenceEquals(ProcessItems[j], row))
+                    int pid = ProcessItems[r].PID;
+                    if (incomingPids.Contains(pid))
                         continue;
-                    found = j;
-                    break;
+                    ProcessItems.RemoveAt(r);
+                    _processCache.Remove(pid);
                 }
 
-                if (found >= 0)
+                for (int i = 0; i < incoming.Count; i++)
                 {
-                    if (found != i)
-                        ProcessItems.Move(found, i);
+                    ProcessEntry snap = incoming[i];
+                    if (!_processCache.TryGetValue(snap.PID, out ProcessEntry? row))
+                    {
+                        row = new ProcessEntry();
+                        row.InitializeFromSample(snap);
+                        _processCache[snap.PID] = row;
+                    }
+                    else
+                    {
+                        row.ApplyDynamicMetricsFrom(snap);
+                    }
+
+                    if (i < ProcessItems.Count && ReferenceEquals(ProcessItems[i], row))
+                        continue;
+
+                    int found = -1;
+                    for (int j = i; j < ProcessItems.Count; j++)
+                    {
+                        if (!ReferenceEquals(ProcessItems[j], row))
+                            continue;
+                        found = j;
+                        break;
+                    }
+
+                    if (found >= 0)
+                    {
+                        if (found != i)
+                            ProcessItems.Move(found, i);
+                    }
+                    else
+                    {
+                        ProcessItems.Insert(i, row);
+                    }
                 }
-                else
-                {
-                    ProcessItems.Insert(i, row);
-                }
+
+                while (ProcessItems.Count > incoming.Count)
+                    ProcessItems.RemoveAt(ProcessItems.Count - 1);
             }
-
-            while (ProcessItems.Count > incoming.Count)
-                ProcessItems.RemoveAt(ProcessItems.Count - 1);
+            finally
+            {
+                ProcessItems.EndUpdate();
+            }
         }
 
         private void ShutdownCore()
@@ -545,8 +554,17 @@ namespace SysSuite.ViewModels
 
                 try
                 {
-                    while (ProcessItems.Count > 0)
-                        ProcessItems.RemoveAt(ProcessItems.Count - 1);
+                    ProcessItems.BeginUpdate();
+                    try
+                    {
+                        while (ProcessItems.Count > 0)
+                            ProcessItems.RemoveAt(ProcessItems.Count - 1);
+                    }
+                    finally
+                    {
+                        ProcessItems.EndUpdate();
+                    }
+
                     _processCache.Clear();
                 }
                 catch { }

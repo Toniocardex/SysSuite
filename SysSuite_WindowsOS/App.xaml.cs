@@ -37,6 +37,7 @@ namespace SysSuite
             services.AddSingleton<DiskAnalyzer>();
             services.AddSingleton<CleanupService>();
             services.AddSingleton<RamOptimizerService>();
+            services.AddSingleton<GpuMonitorService>();
             services.AddSingleton<SystemRestoreService>();
             services.AddTransient<SystemInfo>();
             services.AddTransient<DiscoViewModel>();
@@ -63,7 +64,8 @@ namespace SysSuite
                 sp.GetRequiredService<CleanupService>(),
                 sp.GetRequiredService<BrowserService>(),
                 sp.GetRequiredService<ProcessManager>(),
-                sp.GetRequiredService<RamOptimizerService>()));
+                sp.GetRequiredService<RamOptimizerService>(),
+                sp.GetRequiredService<GpuMonitorService>()));
             Services = services.BuildServiceProvider();
         }
 

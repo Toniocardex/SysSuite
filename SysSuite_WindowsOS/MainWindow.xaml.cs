@@ -31,7 +31,7 @@ namespace SysSuite
 
         private static readonly Dictionary<string, Type> NavPagesMap = new()
         {
-            ["Hub"]        = typeof(HubPage),
+            ["Hub"]        = typeof(DashboardPage),
             ["MainSuite"]  = typeof(MainSuitePage),
             ["Monitor"]    = typeof(MonitorPage),
             ["Disco"]      = typeof(DiscoPage),

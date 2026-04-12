@@ -1,0 +1,52 @@
+<UserControl
+    x:Class="SysSuite.Views.HardwareSnapshotView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- DTO immutabile: sostituito solo dopo GatherAll; OneWay senza notifiche sulle stringhe = costo UI trascurabile. -->
+    <Grid DataContext="{Binding HardwareSnapshot, Mode=OneWay}">
+        <Border Style="{StaticResource SysCard}" BorderBrush="#2D3A55" BorderThickness="1">
+            <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="&#xE9F9;" FontFamily="Segoe Fluent Icons" FontSize="20"
+                        Foreground="#00D4A0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Hardware snapshot" Style="{StaticResource SysHeading2}"/>
+                </StackPanel>
+                <Grid ColumnSpacing="12" RowSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="PROCESSORE" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="{Binding Processor, Mode=OneWay}" FontFamily="Consolas"
+                            FontSize="11" Foreground="#00D4A0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4">
+                        <TextBlock Text="GPU (MODELLO)" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="{Binding GpuModel, Mode=OneWay}" FontFamily="Consolas"
+                            FontSize="11" Foreground="#A78BFA" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Text="RAM" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="{Binding Ram, Mode=OneWay}" FontFamily="Consolas"
+                            FontSize="11" Foreground="#3B9EFF" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" Spacing="4">
+                        <TextBlock Text="MOTHERBOARD" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="{Binding Motherboard, Mode=OneWay}" FontFamily="Consolas"
+                            FontSize="11" Foreground="#ECF0F8" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="4" Spacing="4">
+                        <TextBlock Text="DISPLAY" Style="{StaticResource SysHeading3}"/>
+                        <TextBlock Text="{Binding DisplayText, Mode=OneWay}" FontFamily="Consolas"
+                            FontSize="11" Foreground="#A78BFA" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
