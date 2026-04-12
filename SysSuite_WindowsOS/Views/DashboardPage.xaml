@@ -7,16 +7,17 @@
 
     <Page.Resources>
         <SolidColorBrush x:Key="DashCardBg" Color="#1C1F2B"/>
-        <SolidColorBrush x:Key="DashCardBorder" Color="#28FFFFFF"/>
+        <SolidColorBrush x:Key="DashCardBorderBrush" Color="#33FFFFFF"/>
         <SolidColorBrush x:Key="DashCyanAccent" Color="#22D3EE"/>
-        <SolidColorBrush x:Key="DashStorageBorder" Color="#4034D399"/>
+        <SolidColorBrush x:Key="DashRamViolet" Color="#A78BFA"/>
+        <SolidColorBrush x:Key="DashSecondaryMetric" Color="#A0A0A0"/>
 
-        <Style x:Key="DashCardBorderStyle" TargetType="Border">
+        <Style x:Key="DashHardwareCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource DashCardBg}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DashCardBorder}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DashCardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="18,16"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="20"/>
             <Setter Property="Shadow">
                 <Setter.Value>
                     <ThemeShadow/>
@@ -28,11 +29,27 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
-        <Style x:Key="DashMetricHugeStyle" TargetType="TextBlock">
+        <Style x:Key="DashRingCenterPercentStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="FontSize" Value="18"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="LineHeight" Value="32"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="DashSecondaryBodyStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource DashSecondaryMetric}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="18"/>
+        </Style>
+
+        <Style x:Key="DashGpuVramBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource SysProgressBar}">
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
         </Style>
 
         <Style x:Key="DashProgressBarBoostStyle" TargetType="ProgressBar" BasedOn="{StaticResource SysProgressBar}">
@@ -43,9 +60,9 @@
 
         <Style x:Key="DashModuleTileBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="#1C1F2B"/>
-            <Setter Property="BorderBrush" Value="#20FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DashCardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Padding" Value="16,18"/>
             <Setter Property="MinHeight" Value="128"/>
         </Style>
@@ -76,7 +93,7 @@
                 Visibility="{x:Bind ViewModel.MainContentVisibility, Mode=OneWay}">
                 <StackPanel Padding="32,0,32,28" Spacing="24" MaxWidth="1100" HorizontalAlignment="Center">
 
-                    <Grid MaxWidth="1180" HorizontalAlignment="Center" RowSpacing="14">
+                    <Grid MaxWidth="1180" HorizontalAlignment="Center" RowSpacing="16">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -90,199 +107,217 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Style="{StaticResource DashCardBorderStyle}" Margin="10" MinHeight="220">
+                            <Border Grid.Column="0" Style="{StaticResource DashHardwareCardStyle}" Margin="10" MinHeight="240">
                                 <StackPanel Spacing="14">
                                     <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <TextBlock Text="&#xE946;" FontFamily="Segoe Fluent Icons" FontSize="24"
-                                            Foreground="{StaticResource SysBlueBrush}" VerticalAlignment="Center"/>
+                                        <FontIcon Glyph="&#xE946;" FontSize="24" Foreground="{StaticResource SysBlueBrush}"
+                                            VerticalAlignment="Center"/>
                                         <TextBlock Text="Sistema operativo" Style="{StaticResource DashCardTitleStyle}"
                                             VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <TextBlock Text="{x:Bind ViewModel.OsNameText, Mode=OneWay}" FontFamily="Consolas"
                                         FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource SysTextPrimaryBrush}"
                                         TextWrapping="Wrap" LineHeight="24"/>
-                                    <TextBlock Text="{x:Bind ViewModel.OsVersionText, Mode=OneWay}" Style="{StaticResource SysCaption}"
-                                        TextWrapping="Wrap" LineHeight="18"/>
+                                    <TextBlock Text="{x:Bind ViewModel.OsVersionText, Mode=OneWay}"
+                                        Style="{StaticResource DashSecondaryBodyStyle}"/>
                                     <StackPanel Spacing="6" Margin="0,8,0,0">
                                         <TextBlock Text="UPTIME" Style="{StaticResource SysHeading3}"/>
                                         <TextBlock Text="{x:Bind ViewModel.LiveUptimeText, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="13" Foreground="{StaticResource SysTextSecondaryBrush}"/>
+                                            FontSize="12" Foreground="{StaticResource DashSecondaryMetric}"/>
                                     </StackPanel>
                                     <StackPanel Spacing="6">
                                         <TextBlock Text="IP LOCALE" Style="{StaticResource SysHeading3}"/>
                                         <TextBlock Text="{x:Bind ViewModel.SnapshotLocalIpText, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="13" Foreground="{StaticResource SysAccentBrush}" TextWrapping="Wrap"/>
+                                            FontSize="12" Foreground="{StaticResource SysAccentBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
 
-                            <Border Grid.Column="1" Style="{StaticResource DashCardBorderStyle}" Margin="10" MinHeight="220">
-                                <Grid ColumnSpacing="16">
+                            <!-- Processore: Hub non espone Cpu%; anello DXGI (stesso binding della scheda GPU, layout distinto) -->
+                            <Border Grid.Column="1" Style="{StaticResource DashHardwareCardStyle}" Margin="10" MinHeight="240">
+                                <Grid ColumnSpacing="18">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Width="4" CornerRadius="2" VerticalAlignment="Stretch"
-                                        Background="{StaticResource DashCyanAccent}" Opacity="0.85" Margin="0,4,0,4"/>
-                                    <StackPanel Grid.Column="1" Spacing="12">
+                                    <StackPanel Grid.Column="0" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="Utilizzo GPU (DXGI)" Style="{StaticResource DashSecondaryBodyStyle}"
+                                            FontSize="10" CharacterSpacing="40" Opacity="0.9"/>
+                                        <Grid Width="80" Height="80" HorizontalAlignment="Center">
+                                            <ProgressRing Width="80" Height="80"
+                                                IsIndeterminate="False"
+                                                Minimum="0" Maximum="100"
+                                                Value="{x:Bind ViewModel.GpuUsagePercentValue, Mode=OneWay}"
+                                                Foreground="{StaticResource DashCyanAccent}"/>
+                                            <TextBlock Style="{StaticResource DashRingCenterPercentStyle}"
+                                                Foreground="{StaticResource DashCyanAccent}"
+                                                Text="{x:Bind ViewModel.GpuUsagePercentage, Mode=OneWay}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="10" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <TextBlock Text="&#xE9D9;" FontFamily="Segoe Fluent Icons" FontSize="24"
-                                                Foreground="{StaticResource DashCyanAccent}" VerticalAlignment="Center"/>
+                                            <FontIcon Glyph="&#xE950;" FontSize="24" Foreground="{StaticResource DashCyanAccent}"
+                                                VerticalAlignment="Center"/>
                                             <TextBlock Text="Processore" Style="{StaticResource DashCardTitleStyle}"
                                                 VerticalAlignment="Center"/>
                                         </StackPanel>
                                         <TextBlock Text="{x:Bind ViewModel.DashboardCpuName, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource DashCyanAccent}"
-                                            TextWrapping="Wrap" LineHeight="22"/>
+                                            FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource SysTextPrimaryBrush}"
+                                            TextWrapping="Wrap" LineHeight="20"/>
                                         <TextBlock Text="{x:Bind ViewModel.DashboardCpuCoresLine, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="12" Foreground="{StaticResource SysTextSecondaryBrush}" TextWrapping="Wrap"
-                                            LineHeight="20"/>
+                                            Style="{StaticResource DashSecondaryBodyStyle}" FontSize="11"/>
                                         <TextBlock Text="{x:Bind ViewModel.DashboardCpuFreqLine, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="11" Foreground="{StaticResource SysTextMutedBrush}" TextWrapping="Wrap"
-                                            Margin="0,2,0,0"/>
-                                        <StackPanel Spacing="6" Margin="0,6,0,0">
+                                            Style="{StaticResource DashSecondaryBodyStyle}" FontSize="11" Margin="0,2,0,0"/>
+                                        <StackPanel Spacing="4" Margin="0,6,0,0">
                                             <TextBlock Text="SCHEDA MADRE" Style="{StaticResource SysHeading3}"/>
                                             <TextBlock Text="{x:Bind ViewModel.HardwareSnapshot.Motherboard, Mode=OneWay}" FontFamily="Consolas"
-                                                FontSize="11" Foreground="{StaticResource SysTextPrimaryBrush}" TextWrapping="Wrap"
-                                                LineHeight="18"/>
+                                                FontSize="11" Foreground="{StaticResource DashSecondaryMetric}" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Column="2" Style="{StaticResource DashCardBorderStyle}" Margin="10" MinHeight="220">
-                                <Grid ColumnSpacing="16">
+                            <Border Grid.Column="2" Style="{StaticResource DashHardwareCardStyle}" Margin="10" MinHeight="240">
+                                <Grid ColumnSpacing="18">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="0">
-                                        <ProgressRing Width="76" Height="76"
-                                            IsIndeterminate="False"
-                                            Minimum="0" Maximum="100"
-                                            Value="{x:Bind ViewModel.RamUsedPercentValue, Mode=OneWay}"
-                                            Foreground="#A78BFA"/>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="8">
+                                        <Grid Width="80" Height="80" HorizontalAlignment="Center">
+                                            <ProgressRing Width="80" Height="80"
+                                                IsIndeterminate="False"
+                                                Minimum="0" Maximum="100"
+                                                Value="{x:Bind ViewModel.RamUsedPercentValue, Mode=OneWay}"
+                                                Foreground="{StaticResource DashRamViolet}"/>
+                                            <TextBlock Style="{StaticResource DashRingCenterPercentStyle}"
+                                                Foreground="{StaticResource DashRamViolet}"
+                                                Text="{x:Bind ViewModel.RamUsedPercentText, Mode=OneWay}"/>
+                                        </Grid>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="10" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <TextBlock Text="&#xE964;" FontFamily="Segoe Fluent Icons" FontSize="24"
-                                                Foreground="#A78BFA" VerticalAlignment="Center"/>
+                                            <FontIcon Glyph="&#xEEA0;" FontSize="24" Foreground="{StaticResource DashRamViolet}"
+                                                VerticalAlignment="Center"/>
                                             <TextBlock Text="Memoria RAM" Style="{StaticResource DashCardTitleStyle}"
                                                 VerticalAlignment="Center"/>
                                         </StackPanel>
                                         <TextBlock Text="{x:Bind ViewModel.HardwareSnapshot.Ram, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="11" Foreground="#A78BFA" TextWrapping="Wrap"
+                                            FontSize="11" Foreground="{StaticResource DashRamViolet}" TextWrapping="Wrap"
                                             LineHeight="18" MaxLines="4" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{x:Bind ViewModel.RamCommercialText, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="11" Foreground="{StaticResource SysTextSecondaryBrush}" TextWrapping="Wrap"/>
-                                        <TextBlock Style="{StaticResource DashMetricHugeStyle}" Foreground="#A78BFA"
-                                            Text="{x:Bind ViewModel.RamUsedPercentText, Mode=OneWay}"/>
+                                            Style="{StaticResource DashSecondaryBodyStyle}" FontSize="11"/>
                                         <TextBlock Text="{x:Bind ViewModel.RamDetailText, Mode=OneWay}" Style="{StaticResource SysCaption}"
-                                            TextWrapping="Wrap"/>
+                                            Foreground="{StaticResource DashSecondaryMetric}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
                         </Grid>
 
-                        <!-- Riga 2: Archiviazione | Scheda video -->
+                        <!-- Riga 2: Archiviazione | Scheda video (vetrina GPU) -->
                         <Grid Grid.Row="1" ColumnSpacing="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Style="{StaticResource DashCardBorderStyle}" Margin="10" MinHeight="240"
-                                BorderBrush="{StaticResource DashStorageBorder}">
+                            <Border Grid.Column="0" Style="{StaticResource DashHardwareCardStyle}" Margin="10" MinHeight="260">
                                 <Grid ColumnSpacing="18">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="10">
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="12">
                                         <lvc:PieChart Series="{Binding DiskDonutSeries, Mode=OneWay}"
                                             Width="112" Height="112" InitialRotation="-90" MaxAngle="360"
                                             LegendPosition="Hidden" TooltipPosition="Hidden"/>
-                                        <ProgressRing Width="56" Height="56"
-                                            IsIndeterminate="False"
-                                            Minimum="0" Maximum="100"
-                                            Value="{x:Bind ViewModel.DiskUsedPercentValue, Mode=OneWay}"
-                                            Foreground="{StaticResource SysGreenBrush}"/>
-                                        <TextBlock Text="Agg. 30s" Style="{StaticResource SysCaption}" HorizontalAlignment="Center"/>
+                                        <Grid Width="80" Height="80" HorizontalAlignment="Center">
+                                            <ProgressRing Width="80" Height="80"
+                                                IsIndeterminate="False"
+                                                Minimum="0" Maximum="100"
+                                                Value="{x:Bind ViewModel.DiskUsedPercentValue, Mode=OneWay}"
+                                                Foreground="{StaticResource SysGreenBrush}"/>
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal"
+                                                Spacing="0">
+                                                <TextBlock FontFamily="Consolas" FontSize="18" FontWeight="Bold"
+                                                    Foreground="{StaticResource SysGreenBrush}"
+                                                    VerticalAlignment="Bottom"
+                                                    Text="{x:Bind ViewModel.DiskUsedPercentValue, Mode=OneWay}"/>
+                                                <TextBlock Text="%" FontSize="12" FontWeight="SemiBold"
+                                                    Foreground="{StaticResource SysGreenBrush}"
+                                                    VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock Text="Agg. 30s" Style="{StaticResource SysCaption}"
+                                            Foreground="{StaticResource DashSecondaryMetric}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <TextBlock Text="&#xEDA2;" FontFamily="Segoe Fluent Icons" FontSize="24"
-                                                Foreground="{StaticResource SysGreenBrush}" VerticalAlignment="Center"/>
+                                            <FontIcon Glyph="&#xEDA2;" FontSize="24" Foreground="{StaticResource SysGreenBrush}"
+                                                VerticalAlignment="Center"/>
                                             <TextBlock Text="Archiviazione" Style="{StaticResource DashCardTitleStyle}"
                                                 VerticalAlignment="Center"/>
                                         </StackPanel>
                                         <TextBlock Text="{x:Bind ViewModel.SystemDiskModel, Mode=OneWay}" FontFamily="Consolas"
                                             FontSize="11" Foreground="{StaticResource SysGreenBrush}" TextWrapping="Wrap"
                                             LineHeight="18" MaxLines="3" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Style="{StaticResource DashMetricHugeStyle}" Foreground="{StaticResource SysGreenBrush}"
+                                        <TextBlock FontFamily="Consolas" FontSize="24" FontWeight="Bold"
+                                            Foreground="{StaticResource SysGreenBrush}"
                                             Text="{x:Bind ViewModel.DiskFreeText, Mode=OneWay}"/>
-                                        <TextBlock Text="{x:Bind ViewModel.DiskTotalText, Mode=OneWay}" Style="{StaticResource SysCaption}"
-                                            TextWrapping="Wrap" LineHeight="18"/>
+                                        <TextBlock Text="{x:Bind ViewModel.DiskTotalText, Mode=OneWay}"
+                                            Style="{StaticResource DashSecondaryBodyStyle}" FontSize="11"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
                                             <FontIcon Glyph="&#xE9CA;" FontSize="14"
                                                 Foreground="{StaticResource SysGreenBrush}" VerticalAlignment="Center"/>
                                             <TextBlock Text="{x:Bind ViewModel.DiskTemperature, Mode=OneWay}" FontFamily="Consolas"
-                                                FontSize="12" Foreground="{StaticResource SysTextSecondaryBrush}"
+                                                FontSize="12" Foreground="{StaticResource DashSecondaryMetric}"
                                                 VerticalAlignment="Center"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
                                             <FontIcon Glyph="&#xE8C5;" FontSize="14"
                                                 Foreground="{StaticResource SysGreenBrush}" VerticalAlignment="Center"/>
                                             <TextBlock Text="{x:Bind ViewModel.DiskHealth, Mode=OneWay}" FontFamily="Consolas"
-                                                FontSize="12" Foreground="{StaticResource SysTextSecondaryBrush}"
+                                                FontSize="12" Foreground="{StaticResource DashSecondaryMetric}"
                                                 TextWrapping="Wrap" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Column="1" Style="{StaticResource DashCardBorderStyle}" Margin="10" MinHeight="240">
-                                <Grid ColumnSpacing="16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <ProgressRing Width="76" Height="76"
-                                            IsIndeterminate="False"
-                                            Minimum="0" Maximum="100"
-                                            Value="{x:Bind ViewModel.GpuUsagePercentValue, Mode=OneWay}"
-                                            Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <TextBlock Text="&#xE7FC;" FontFamily="Segoe Fluent Icons" FontSize="24"
+                            <Border Grid.Column="1" Style="{StaticResource DashHardwareCardStyle}" Margin="10" MinHeight="280"
+                                BorderBrush="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}" BorderThickness="1">
+                                <Border Background="#151822" CornerRadius="12" Padding="16" Margin="-4">
+                                    <StackPanel Spacing="16">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <FontIcon Glyph="&#xF211;" FontSize="30"
                                                 Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Scheda video" Style="{StaticResource DashCardTitleStyle}"
-                                                VerticalAlignment="Center"/>
+                                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                                <TextBlock Text="Scheda video" Style="{StaticResource DashCardTitleStyle}"/>
+                                                <TextBlock Text="{x:Bind ViewModel.HardwareSnapshot.GpuModel, Mode=OneWay}" FontFamily="Consolas"
+                                                    FontSize="12" Style="{StaticResource DashSecondaryBodyStyle}" TextWrapping="Wrap"/>
+                                            </StackPanel>
                                         </StackPanel>
-                                        <TextBlock Text="{x:Bind ViewModel.HardwareSnapshot.GpuModel, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="12" Foreground="{StaticResource SysPurpleBrush}" TextWrapping="Wrap"
-                                            LineHeight="20"/>
                                         <TextBlock Text="{x:Bind ViewModel.HardwareSnapshot.DisplayText, Mode=OneWay}" FontFamily="Consolas"
-                                            FontSize="11" Foreground="{StaticResource SysTextSecondaryBrush}" TextWrapping="Wrap"
-                                            LineHeight="18"/>
-                                        <StackPanel Spacing="6" Margin="0,4,0,0">
+                                            Style="{StaticResource DashSecondaryBodyStyle}" FontSize="11"/>
+                                        <StackPanel Spacing="8">
                                             <TextBlock Text="UTILIZZO GPU (DXGI)" Style="{StaticResource SysHeading3}"/>
-                                            <TextBlock Style="{StaticResource DashMetricHugeStyle}"
+                                            <TextBlock FontFamily="Consolas" FontSize="32" FontWeight="Bold"
                                                 Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"
                                                 Text="{x:Bind ViewModel.GpuUsagePercentage, Mode=OneWay}"/>
-                                            <TextBlock Text="VRAM" Style="{StaticResource SysHeading3}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="VRAM" Style="{StaticResource SysHeading3}"/>
                                             <TextBlock Text="{x:Bind ViewModel.GpuUsedVram, Mode=OneWay}" FontFamily="Consolas"
-                                                FontSize="12" Foreground="{StaticResource SysTextSecondaryBrush}"
+                                                FontSize="13" Foreground="{StaticResource DashSecondaryMetric}" TextWrapping="Wrap"/>
+                                            <ProgressBar Style="{StaticResource DashGpuVramBarStyle}"
+                                                Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"
+                                                Value="{x:Bind ViewModel.GpuUsagePercentValue, Mode=OneWay}"/>
+                                            <TextBlock Text="Barra: utilizzo motore DXGI (0–100%). Dettaglio allocazione in riga VRAM."
+                                                Style="{StaticResource DashSecondaryBodyStyle}" FontSize="10" Opacity="0.85"
                                                 TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <ProgressBar Style="{StaticResource SysProgressBar}" Minimum="0" Maximum="100"
-                                            Margin="0,4,0,0" Height="6" CornerRadius="3"
-                                            Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"
-                                            Value="{x:Bind ViewModel.GpuUsagePercentValue, Mode=OneWay}"/>
                                     </StackPanel>
-                                </Grid>
+                                </Border>
                             </Border>
                         </Grid>
                     </Grid>
@@ -296,7 +331,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0" Style="{StaticResource DashCardBorderStyle}" Padding="18,16">
+                                <Border Grid.Column="0" Style="{StaticResource DashHardwareCardStyle}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -304,12 +339,12 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" Spacing="8" VerticalAlignment="Center">
                                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                                <TextBlock Text="&#xE945;" FontFamily="Segoe Fluent Icons"
-                                                    FontSize="18" Foreground="#00D4A0" VerticalAlignment="Center"/>
+                                                <FontIcon Glyph="&#xE945;" FontSize="18" Foreground="#00D4A0"
+                                                    VerticalAlignment="Center"/>
                                                 <TextBlock Text="One-Click Boost" Style="{StaticResource DashCardTitleStyle}"/>
                                             </StackPanel>
                                             <TextBlock Text="Temp, miniature, cache browser, processi bloccati."
-                                                Style="{StaticResource SysCaption}" TextWrapping="Wrap"/>
+                                                Foreground="{StaticResource DashSecondaryMetric}" FontSize="12" TextWrapping="Wrap"/>
                                             <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,6,0,0">
                                                 <ProgressBar Style="{StaticResource DashProgressBarBoostStyle}"
                                                     Width="180" Minimum="0" Maximum="100"
@@ -328,8 +363,8 @@
                                     </Grid>
                                 </Border>
 
-                                <Border Grid.Column="2" Style="{StaticResource DashCardBorderStyle}"
-                                    BorderBrush="#383B9EFF" BorderThickness="1" Padding="18,16">
+                                <Border Grid.Column="2" Style="{StaticResource DashHardwareCardStyle}"
+                                    BorderBrush="#383B9EFF" BorderThickness="1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -337,12 +372,12 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" Spacing="8" VerticalAlignment="Center">
                                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                                <TextBlock Text="&#xE9F9;" FontFamily="Segoe Fluent Icons"
-                                                    FontSize="18" Foreground="#3B9EFF" VerticalAlignment="Center"/>
+                                                <FontIcon Glyph="&#xE75C;" FontSize="18" Foreground="#3B9EFF"
+                                                    VerticalAlignment="Center"/>
                                                 <TextBlock Text="RAM Optimizer" Style="{StaticResource DashCardTitleStyle}"/>
                                             </StackPanel>
                                             <TextBlock Text="{x:Bind ViewModel.RamOptimizerStatusText, Mode=OneWay}"
-                                                Style="{StaticResource SysCaption}"/>
+                                                Foreground="{StaticResource DashSecondaryMetric}" FontSize="12"/>
                                             <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,6,0,0">
                                                 <ProgressBar Style="{StaticResource SysProgressBar}"
                                                     Width="180" Height="6" CornerRadius="3" Foreground="#3B9EFF"
@@ -373,65 +408,65 @@
 
                                 <Button Grid.Column="0" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="MainSuite"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,12"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE945;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#00D4A0"/>
+                                            <FontIcon Glyph="&#xE945;" FontSize="22" Foreground="#00D4A0"/>
                                             <TextBlock Text="Ottimizzazione" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="Pulizia, SFC, privacy" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="Pulizia, SFC, privacy" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="1" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Monitor"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,12"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE9F9;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#22D3EE"/>
+                                            <FontIcon Glyph="&#xE9F9;" FontSize="22" Foreground="#22D3EE"/>
                                             <TextBlock Text="Monitor Live" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="CPU e RAM in tempo reale" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="CPU e RAM in tempo reale" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="2" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Disco"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,12"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xEDA2;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#34D399"/>
+                                            <FontIcon Glyph="&#xEDA2;" FontSize="22" Foreground="#34D399"/>
                                             <TextBlock Text="Analisi Disco" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="File grandi e duplicati" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="File grandi e duplicati" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="3" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Gaming"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,12"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE7FC;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#A78BFA"/>
+                                            <FontIcon Glyph="&#xE7FC;" FontSize="22" Foreground="#A78BFA"/>
                                             <TextBlock Text="Gaming Mode" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="FPS e latenza ottimizzati" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="FPS e latenza ottimizzati" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="4" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="AppManager"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,0,12"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE74C;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#34D399"/>
+                                            <FontIcon Glyph="&#xE74C;" FontSize="22" Foreground="#34D399"/>
                                             <TextBlock Text="Processi e App" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="Avvio automatico e gestione" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="Avvio automatico e gestione" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
@@ -446,65 +481,65 @@
 
                                 <Button Grid.Column="0" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Network"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,0"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE968;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#00D4A0"/>
+                                            <FontIcon Glyph="&#xE968;" FontSize="22" Foreground="#00D4A0"/>
                                             <TextBlock Text="Scanner Rete" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="DNS, TCP/IP, porte aperte" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="DNS, TCP/IP, porte aperte" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="1" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Driver"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,0"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE8B8;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#FFB547"/>
+                                            <FontIcon Glyph="&#xE8B8;" FontSize="22" Foreground="#FFB547"/>
                                             <TextBlock Text="Driver" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="Lista e backup con DISM" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="Lista e backup con DISM" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="2" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Battery"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,0"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE83F;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#34D399"/>
+                                            <FontIcon Glyph="&#xE83F;" FontSize="22" Foreground="#34D399"/>
                                             <TextBlock Text="Batteria" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="Salute, cicli e report" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="Salute, cicli e report" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="3" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Browser"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,12,0"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE8BB;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#FF5A5A"/>
+                                            <FontIcon Glyph="&#xE8BB;" FontSize="22" Foreground="#FF5A5A"/>
                                             <TextBlock Text="Pulizia Browser" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="Chrome, Edge, Firefox, Brave" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="Chrome, Edge, Firefox, Brave" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
 
                                 <Button Grid.Column="4" Command="{x:Bind ViewModel.NavigateToModuleCommand}" CommandParameter="Registry"
                                     Style="{StaticResource SysButtonGhost}" Padding="0" Margin="0,0,0,0"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="12">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="16">
                                     <Border Style="{StaticResource DashModuleTileBorderStyle}" HorizontalAlignment="Stretch">
                                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="#A78BFA"/>
+                                            <FontIcon Glyph="&#xE8A5;" FontSize="22" Foreground="#A78BFA"/>
                                             <TextBlock Text="Registro" Style="{StaticResource DashCardTitleStyle}"/>
-                                            <TextBlock Text="Chiavi orfane e backup" Style="{StaticResource SysCaption}"
-                                                MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="Chiavi orfane e backup" Foreground="{StaticResource DashSecondaryMetric}"
+                                                FontSize="11" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>
