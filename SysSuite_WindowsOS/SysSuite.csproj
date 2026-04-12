@@ -19,6 +19,8 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>SysSuite</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Icona Windows (.ico multi-risoluzione) da Assets/Brand -->
+    <ApplicationIcon>Assets\Brand\AppIcon.ico</ApplicationIcon>
     <Platforms>x64</Platforms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
@@ -69,6 +71,19 @@
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
+
+  <!-- Logo ridimensionato + .ico per taskbar / SetIcon (copia in output per percorso runtime) -->
+  <ItemGroup>
+    <Content Include="Assets\Brand\AppIcon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Brand\Logo512.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Brand\Logo256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <!-- Pacchetti NuGet: solo cio' che serve alla build (vedi nota sotto) -->
   <ItemGroup>

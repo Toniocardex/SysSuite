@@ -135,6 +135,7 @@ Obiettivo: ridurre overhead managed dove conta (enumerazioni, monitor) e allinea
 ### UI & integrazione
 - [x] `MainSuitePage`: `ServicesManager` con `SystemRestoreService` da DI, tab Servizi async (`LoadServicesAsync`), righe `ServiceUiRow`, disable/enable async
 - [x] `GamingService`: costruttore con `SystemRestoreService`, `DisableAsync`/`EnableAsync` per servizi Xbox
+- [x] **Brand / icone:** `Assets/Brand/` — `AppIcon.ico` (multi-size + `ApplicationIcon` + `AppWindow.SetIcon`), `Logo512.png` (sidebar `MainWindow`), **`Logo256.png`** (viste compatte: intestazione **HubPage**, **SettingsPage**); `Content` con copia in output
 
 ### Build
 - [x] `ServicesManager`: buffer SCM come `nint` + blocchi `unsafe` mirati per `NativeMemory`

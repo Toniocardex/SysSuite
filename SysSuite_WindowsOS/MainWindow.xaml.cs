@@ -78,6 +78,18 @@ namespace SysSuite
 
             try
             {
+                string? dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string iconPath = Path.Combine(dir ?? ".", "Assets", "Brand", "AppIcon.ico");
+                if (File.Exists(iconPath))
+                    appWindow.SetIcon(iconPath);
+            }
+            catch
+            {
+                /* icona finestra opzionale */
+            }
+
+            try
+            {
                 _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
                 _cpuCounter.NextValue();
             }

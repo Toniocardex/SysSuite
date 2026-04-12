@@ -5,10 +5,14 @@
     Background="{StaticResource SysBGBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Padding="32,24" Spacing="16" MaxWidth="900" HorizontalAlignment="Center">
-            <StackPanel Spacing="4">
-                <TextBlock Text="Impostazioni" Style="{StaticResource SysHeading1}"/>
-                <TextBlock Text="Comportamento, notifiche proattive, One-Click Boost e dati locali."
-                    Style="{StaticResource SysBodyText}"/>
+            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <Image Source="ms-appx:///Assets/Brand/Logo256.png" Width="40" Height="40"
+                    Stretch="Uniform" VerticalAlignment="Center"/>
+                <StackPanel Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="Impostazioni" Style="{StaticResource SysHeading1}"/>
+                    <TextBlock Text="Comportamento, notifiche proattive, One-Click Boost e dati locali."
+                        Style="{StaticResource SysBodyText}"/>
+                </StackPanel>
             </StackPanel>
 
             <!-- Generale -->

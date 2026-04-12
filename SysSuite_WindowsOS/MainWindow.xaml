@@ -49,7 +49,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Icona logo -->
+                    <!-- Icona logo (PNG 512 px in Assets/Brand, da master ad alta risoluzione) -->
                     <Border
                         Grid.Column="0"
                         Width="34" Height="34"
@@ -57,14 +57,13 @@
                         Background="#00D4A018"
                         BorderBrush="#00D4A040"
                         BorderThickness="1">
-                        <TextBlock
-                            Text="S"
-                            FontFamily="Consolas"
-                            FontWeight="Bold"
-                            FontSize="18"
-                            Foreground="#00D4A0"
+                        <Image
+                            Source="ms-appx:///Assets/Brand/Logo512.png"
+                            Width="26"
+                            Height="26"
                             HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
+                            VerticalAlignment="Center"
+                            Stretch="Uniform"/>
                     </Border>
 
                     <!-- Nome app -->

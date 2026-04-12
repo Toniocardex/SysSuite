@@ -8,10 +8,14 @@
         <StackPanel Padding="32,24" Spacing="20" MaxWidth="1100" HorizontalAlignment="Center">
 
             <!-- Titolo -->
-            <StackPanel Spacing="4">
-                <TextBlock Text="Dashboard" Style="{StaticResource SysHeading1}"/>
-                <TextBlock Text="{Binding SubtitleText, Mode=OneWay}"
-                    Style="{StaticResource SysBodyText}"/>
+            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <Image Source="ms-appx:///Assets/Brand/Logo256.png" Width="44" Height="44"
+                    Stretch="Uniform" VerticalAlignment="Center"/>
+                <StackPanel Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="Dashboard" Style="{StaticResource SysHeading1}"/>
+                    <TextBlock Text="{Binding SubtitleText, Mode=OneWay}"
+                        Style="{StaticResource SysBodyText}"/>
+                </StackPanel>
             </StackPanel>
 
             <!-- Riga 1: CPU · RAM · Disco -->
