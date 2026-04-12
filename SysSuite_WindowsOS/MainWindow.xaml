@@ -174,11 +174,9 @@
                                     FontSize="13"
                                     Foreground="#B0BAD0"
                                     VerticalAlignment="Center"/>
-                                <!-- Badge "LIVE" -->
+                                <!-- Badge "LIVE" (stesso accento del pulsante primario / Aggiorna) -->
                                 <Border
-                                    Background="#FF5A5A18"
-                                    BorderBrush="#FF5A5A"
-                                    BorderThickness="1"
+                                    Style="{StaticResource SysBadgeAccent}"
                                     CornerRadius="10"
                                     Padding="6,2"
                                     VerticalAlignment="Center">
@@ -187,7 +185,7 @@
                                         FontFamily="Consolas"
                                         FontSize="9"
                                         FontWeight="SemiBold"
-                                        Foreground="#FF5A5A"
+                                        Foreground="{StaticResource SysAccentBrush}"
                                         CharacterSpacing="100"/>
                                 </Border>
                             </StackPanel>
