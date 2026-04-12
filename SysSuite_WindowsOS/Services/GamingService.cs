@@ -14,7 +14,7 @@ namespace SysSuite.Services
 
         private readonly PerformanceService _perf = new();
         private readonly NetworkService     _net  = new();
-        private readonly ServicesManager    _svc  = new();
+        private readonly ServicesManager    _svc;
 
         private string _prevPowerPlan = "";
 
@@ -24,8 +24,9 @@ namespace SysSuite.Services
         private static readonly string[] BackgroundServices =
             { "wuauserv", "bits", "OneSyncSvc" };
 
-        public GamingService()
+        public GamingService(SystemRestoreService systemRestore)
         {
+            _svc = new ServicesManager(systemRestore);
             // Registra i handler una sola volta per evitare log duplicati
             _perf.Log += (m, t) => Log?.Invoke(m, t);
             _net.Log  += (m, t) => Log?.Invoke(m, t);
@@ -46,8 +47,17 @@ namespace SysSuite.Services
 
             _net.DisableNagle();
 
-            foreach (var s in XboxServices)
-                try { _svc.Disable(s); } catch { }
+            foreach (string s in XboxServices)
+            {
+                try
+                {
+                    await _svc.DisableAsync(s, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    /* continua con gli altri servizi Xbox */
+                }
+            }
 
             foreach (var s in BackgroundServices)
                 await ProcessRunner.RunAsync("net.exe", $"stop {s}", cancellationToken).ConfigureAwait(false);
@@ -69,8 +79,17 @@ namespace SysSuite.Services
 
             _net.RestoreNagle();
 
-            foreach (var s in XboxServices)
-                try { _svc.Enable(s, "auto"); } catch { }
+            foreach (string s in XboxServices)
+            {
+                try
+                {
+                    await _svc.EnableAsync(s, "auto", cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    /* continua */
+                }
+            }
 
             foreach (var s in BackgroundServices)
                 await ProcessRunner.RunAsync("net.exe", $"start {s}", cancellationToken).ConfigureAwait(false);

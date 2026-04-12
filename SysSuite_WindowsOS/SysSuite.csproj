@@ -27,6 +27,8 @@
     <WindowsPackageType>None</WindowsPackageType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- NtQuerySystemInformation + MemoryMarshal su buffer nativo (monitor processi) -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!--
       dotnet / MSBuild Core non imposta sempre WindowsSdkPath (il fallback registry in interop.targets

@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
@@ -13,13 +15,15 @@ namespace SysSuite.ViewModels
     public partial class AppManagerViewModel : ObservableObject
     {
         private readonly ProcessManager _pm;
+        private readonly StartupEntriesService _startupEntries;
         private readonly LeftoverScannerService _leftoverScanner;
         private string _mode = "";
         private List<AppManagerRow> _allItems = new();
 
-        public AppManagerViewModel(ProcessManager pm, LeftoverScannerService leftoverScanner)
+        public AppManagerViewModel(ProcessManager pm, StartupEntriesService startupEntries, LeftoverScannerService leftoverScanner)
         {
             _pm = pm;
+            _startupEntries = startupEntries;
             _leftoverScanner = leftoverScanner;
         }
 
@@ -114,7 +118,7 @@ namespace SysSuite.ViewModels
             IsBusy = true;
             try
             {
-                var entries = await Task.Run(() => _pm.GetStartupEntries()).ConfigureAwait(true);
+                var entries = await Task.Run(() => _startupEntries.GetStartupEntries()).ConfigureAwait(true);
                 _mode = "startup";
                 Header0 = "NOME";
                 Header1 = "ORIGINE";
@@ -300,10 +304,11 @@ namespace SysSuite.ViewModels
         }
 
         /// <summary>Usato dalla pagina per disabilitare una voce di avvio selezionata.</summary>
-        public bool DisableStartupForRow(AppManagerRow? row)
+        public async Task<bool> DisableStartupForRowAsync(AppManagerRow? row, CancellationToken cancellationToken = default)
         {
-            if (row?.Startup == null) return false;
-            return _pm.DisableStartup(row.Startup);
+            if (row?.Startup == null)
+                return false;
+            return await _startupEntries.DisableStartupAsync(row.Startup, cancellationToken).ConfigureAwait(true);
         }
     }
 }

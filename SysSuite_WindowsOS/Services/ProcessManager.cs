@@ -1,24 +1,31 @@
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 using Serilog;
 using SysSuite.Core;
+using SysSuite.Interop;
 using SysSuite.Models;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SysSuite.Services
 {
     /// <summary>Processi, app avvio, disinstallazione, app inutilizzate.</summary>
     public class ProcessManager
     {
-        public event Action<string,string>? Log;
+        public event Action<string, string>? Log;
 
-        // Contatori CPU per processo — campionamento a due tick
-        private readonly Dictionary<int, System.Diagnostics.PerformanceCounter> _cpuCounters = new();
-        private readonly object _counterLock = new();
         private readonly SemaphoreSlim _processReadGate = new(1, 1);
 
-        /// <summary>Legge processi e contatori CPU su thread pool (non blocca la UI).</summary>
+        /// <summary>Ultimo campionamento CPU (tempo kernel+user cumulativo, unità 100 ns).</summary>
+        private readonly Dictionary<int, long> _prevProcCpu100Ns = new(512);
+
+        /// <summary>Percorso immagine per PID (evita QueryFullProcessImageName ad ogni tick).</summary>
+        private readonly Dictionary<int, string> _pathByPid = new(512);
+
+        private readonly object _cpuSampleLock = new();
+        private long _prevSampleQpc;
+
+        /// <summary>Legge processi e metriche su thread pool (non blocca la UI).</summary>
         public async Task<List<ProcessEntry>> GetProcessesAsync(string? filter = null,
             CancellationToken cancellationToken = default)
         {
@@ -35,84 +42,152 @@ namespace SysSuite.Services
 
         public List<ProcessEntry> GetProcesses(string? filter = null)
         {
-            var result  = new List<ProcessEntry>();
-            var current = Process.GetProcesses();
-
-            // Ordina per RAM e crea contatori CPU solo per i top 50 processi
-            // (PerformanceCounter è una risorsa pesante — crearli per 300+ processi è devastante)
-            var topByRam = current
-                .Select(p => { try { return (proc: p, ram: p.WorkingSet64); } catch { return (proc: p, ram: 0L); } })
-                .OrderByDescending(x => x.ram)
-                .Take(50)
-                .Select(x => x.proc.Id)
-                .ToHashSet();
-
-            lock (_counterLock)
+            try
             {
-                var activePids = new HashSet<int>(current.Select(p => p.Id));
+                return GetProcessesViaNtQuery(filter);
+            }
+            catch (Exception ex)
+            {
+                Log?.Invoke($"Enumerazione NT fallita, fallback WMI/Process: {ex.Message}", "warn");
+                return GetProcessesLegacy(filter);
+            }
+        }
 
-                // Rimuovi contatori per processi terminati
-                var dead = _cpuCounters.Keys.Where(pid => !activePids.Contains(pid)).ToList();
-                foreach (var pid in dead)
+        /// <summary>
+        /// <see cref="NtQuerySystemInformation"/> + <see cref="MemoryMarshal"/> (zero-copy sul buffer nativo),
+        /// CPU da delta tempi kernel/user (niente <see cref="PerformanceCounter"/> per processo).
+        /// </summary>
+        private List<ProcessEntry> GetProcessesViaNtQuery(string? filter)
+        {
+            List<NtProcessInfoReader.RawProcessRow> raw = NtProcessInfoReader.EnumerateProcesses();
+            long nowQpc = Stopwatch.GetTimestamp();
+            double wallSeconds;
+            lock (_cpuSampleLock)
+            {
+                wallSeconds = _prevSampleQpc == 0
+                    ? 0
+                    : (nowQpc - _prevSampleQpc) / (double)Stopwatch.Frequency;
+                _prevSampleQpc = nowQpc;
+            }
+
+            int cores = Math.Max(1, Environment.ProcessorCount);
+            var livePids = new HashSet<int>(raw.Count);
+            var result = new List<ProcessEntry>(raw.Count);
+
+            foreach (NtProcessInfoReader.RawProcessRow row in raw)
+            {
+                livePids.Add(row.Pid);
+                if (filter != null && !row.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                long cpuTotal100Ns = row.UserTime100Ns + row.KernelTime100Ns;
+                long prevTotal;
+                lock (_cpuSampleLock)
                 {
-                    _cpuCounters[pid].Dispose();
-                    _cpuCounters.Remove(pid);
+                    if (!_prevProcCpu100Ns.TryGetValue(row.Pid, out prevTotal))
+                        prevTotal = cpuTotal100Ns;
+                    _prevProcCpu100Ns[row.Pid] = cpuTotal100Ns;
                 }
 
-                // Crea contatori SOLO per i top 50 per RAM (non tutti)
-                foreach (var p in current)
+                long delta100Ns = cpuTotal100Ns - prevTotal;
+                double cpuPct = 0;
+                if (wallSeconds > 1e-6)
                 {
-                    if (_cpuCounters.ContainsKey(p.Id)) continue;
-                    if (!topByRam.Contains(p.Id)) continue;
+                    // delta100Ns = tick da 100 ns; secondi CPU = delta / 1e7
+                    cpuPct = 100.0 * (delta100Ns / 1e7) / wallSeconds / cores;
+                    cpuPct = Math.Clamp(cpuPct, 0, 100);
+                }
+
+                DateTime start = row.CreateTime100Ns != 0
+                    ? DateTime.FromFileTimeUtc(row.CreateTime100Ns)
+                    : DateTime.MinValue;
+
+                string path;
+                lock (_cpuSampleLock)
+                {
+                    if (!_pathByPid.TryGetValue(row.Pid, out string? cached) || string.IsNullOrEmpty(cached))
+                    {
+                        path = ProcessImagePath.TryQuery(row.Pid);
+                        if (!string.IsNullOrEmpty(path))
+                            _pathByPid[row.Pid] = path;
+                    }
+                    else
+                    {
+                        path = cached;
+                    }
+                }
+
+                result.Add(new ProcessEntry
+                {
+                    PID = row.Pid,
+                    Name = row.Name,
+                    CpuPercent = Math.Round(cpuPct, 1),
+                    RamMB = Math.Round(row.WorkingSetBytes / 1_048_576.0, 1),
+                    Threads = (int)row.ThreadCount,
+                    Handles = (int)row.HandleCount,
+                    Responding = true,
+                    Path = path,
+                    StartTime = start
+                });
+            }
+
+            PruneCpuHistory(livePids);
+            return result.OrderByDescending(p => p.RamMB).ToList();
+        }
+
+        private void PruneCpuHistory(HashSet<int> livePids)
+        {
+            lock (_cpuSampleLock)
+            {
+                foreach (int pid in _prevProcCpu100Ns.Keys.ToArray())
+                {
+                    if (!livePids.Contains(pid))
+                    {
+                        _prevProcCpu100Ns.Remove(pid);
+                        _pathByPid.Remove(pid);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Percorso legacy (<see cref="Process.GetProcesses"/> + contatori) se NT fallisce.</summary>
+        private List<ProcessEntry> GetProcessesLegacy(string? filter)
+        {
+            var result = new List<ProcessEntry>();
+            Process[] current = Process.GetProcesses();
+            try
+            {
+                foreach (Process p in current)
+                {
                     try
                     {
-                        var ctr = new System.Diagnostics.PerformanceCounter(
-                            "Process", "% Processor Time", p.ProcessName, true);
-                        ctr.NextValue();
-                        _cpuCounters[p.Id] = ctr;
+                        if (filter != null && !p.ProcessName.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        result.Add(new ProcessEntry
+                        {
+                            PID = p.Id,
+                            Name = p.ProcessName,
+                            CpuPercent = 0,
+                            RamMB = Math.Round(p.WorkingSet64 / 1_048_576.0, 1),
+                            Threads = p.Threads.Count,
+                            Handles = p.HandleCount,
+                            Responding = p.Responding,
+                            Path = TryGetPath(p),
+                            StartTime = TryGetStartTime(p)
+                        });
                     }
                     catch { }
                 }
             }
-
-            foreach (var p in current)
+            finally
             {
-                try
+                foreach (Process p in current)
                 {
-                    if (filter != null && !p.ProcessName.Contains(filter, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    // Leggi CPU% — dividi per core count per ottenere % reale
-                    double cpuPct = 0;
-                    lock (_counterLock)
-                    {
-                        if (_cpuCounters.TryGetValue(p.Id, out var ctr))
-                        {
-                            try
-                            {
-                                int cores = Environment.ProcessorCount;
-                                cpuPct = Math.Round(ctr.NextValue() / cores, 1);
-                                cpuPct = Math.Max(0, Math.Min(100, cpuPct));
-                            }
-                            catch { }
-                        }
-                    }
-
-                    result.Add(new ProcessEntry
-                    {
-                        PID        = p.Id,
-                        Name       = p.ProcessName,
-                        CpuPercent = cpuPct,
-                        RamMB      = Math.Round(p.WorkingSet64 / 1_048_576.0, 1),
-                        Threads    = p.Threads.Count,
-                        Handles    = p.HandleCount,
-                        Responding = p.Responding,
-                        Path       = TryGetPath(p),
-                        StartTime  = TryGetStartTime(p)
-                    });
+                    try { p.Dispose(); } catch { }
                 }
-                catch { }
             }
+
             return result.OrderByDescending(p => p.RamMB).ToList();
         }
 
@@ -124,56 +199,11 @@ namespace SysSuite.Services
                 Log?.Invoke($"Processo {pid} terminato", "ok");
                 return true;
             }
-            catch (Exception ex) { Log?.Invoke($"Kill {pid}: {ex.Message}", "err"); return false; }
-        }
-
-        public List<StartupEntry> GetStartupEntries()
-        {
-            var result = new List<StartupEntry>();
-            var regPaths = new[]
+            catch (Exception ex)
             {
-                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",     "HKCU Run"),
-                (@"HKLM\Software\Microsoft\Windows\CurrentVersion\Run",     "HKLM Run"),
-                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce", "HKCU RunOnce"),
-                (@"HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce", "HKLM RunOnce"),
-            };
-            foreach (var (path, label) in regPaths)
-            {
-                var root = path.StartsWith("HKCU") ? Registry.CurrentUser : Registry.LocalMachine;
-                var sub  = path[(path.IndexOf('\\')+1)..];
-                using var key = root.OpenSubKey(sub);
-                if (key == null) continue;
-                foreach (var name in key.GetValueNames())
-                    result.Add(new StartupEntry { Name = name, Command = key.GetValue(name)?.ToString() ?? "", Source = label, RegPath = path });
+                Log?.Invoke($"Kill {pid}: {ex.Message}", "err");
+                return false;
             }
-            // Cartella avvio
-            string startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            foreach (var f in Directory.GetFiles(startupFolder))
-                result.Add(new StartupEntry { Name = Path.GetFileName(f), Command = f, Source = "Cartella Avvio", RegPath = startupFolder });
-
-            return result;
-        }
-
-        public bool DisableStartup(StartupEntry entry)
-        {
-            try
-            {
-                if (entry.Source.StartsWith("HKCU") || entry.Source.StartsWith("HKLM"))
-                {
-                    var root = entry.Source.StartsWith("HKCU") ? Registry.CurrentUser : Registry.LocalMachine;
-                    var sub  = entry.RegPath[(entry.RegPath.IndexOf('\\')+1)..];
-                    using var key = root.OpenSubKey(sub, true);
-                    key?.DeleteValue(entry.Name, false);
-                }
-                else
-                {
-                    string disabled = Path.Combine(entry.RegPath, $"_disabled_{entry.Name}");
-                    File.Move(entry.Command, disabled);
-                }
-                Log?.Invoke($"Disabilitato: {entry.Name}", "ok");
-                return true;
-            }
-            catch (Exception ex) { Log?.Invoke($"Errore: {ex.Message}", "err"); return false; }
         }
 
         public List<InstalledApp> GetInstalledApps(string? filter = null)
@@ -263,7 +293,6 @@ namespace SysSuite.Services
                             Serilog.Log.Warning(ex,
                                 "[App] Chiave di registro corrotta o illeggibile — elemento saltato. Hive={Hive}, SubKey={SubKey}",
                                 hiveLabel, sub);
-                            continue;
                         }
                     }
                 }
@@ -315,16 +344,32 @@ namespace SysSuite.Services
                 }
                 catch { }
             }
+
             return result.OrderByDescending(a => a.DaysUnused).ToList();
         }
 
         private static string TryGetPath(Process p)
         {
-            try { return p.MainModule?.FileName ?? ""; } catch { return ""; }
+            try
+            {
+                return p.MainModule?.FileName ?? "";
+            }
+            catch
+            {
+                return "";
+            }
         }
+
         private static DateTime TryGetStartTime(Process p)
         {
-            try { return p.StartTime; } catch { return DateTime.MinValue; }
+            try
+            {
+                return p.StartTime;
+            }
+            catch
+            {
+                return DateTime.MinValue;
+            }
         }
     }
 }

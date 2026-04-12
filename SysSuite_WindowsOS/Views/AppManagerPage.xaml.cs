@@ -52,7 +52,7 @@ namespace SysSuite.Views
             };
             if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
 
-            bool ok = ViewModel.DisableStartupForRow(row);
+            bool ok = await ViewModel.DisableStartupForRowAsync(row).ConfigureAwait(true);
             ViewModel.StatusText = ok ? "Disabilitato: " + row.Col0 : "Errore disabilitazione.";
             ViewModel.LoadStartupCommand.Execute(null);
         }

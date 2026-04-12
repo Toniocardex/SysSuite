@@ -1,22 +1,27 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SysSuite;
 using SysSuite.Core;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 using System.Diagnostics;
 using SysSuite.Services;
-using System.ServiceProcess;
+using SysSuite.ViewModels;
 using System.Threading.Tasks;
 
 namespace SysSuite.Views
 {
     public sealed partial class MainSuitePage : Page
     {
+        private sealed record ServiceUiRow(string Name, string Description, string Status, SolidColorBrush StatusColor);
+
         private readonly CleanupService      _clean   = new();
         private readonly SystemRepairService _repair  = new();
         private readonly PerformanceService  _perf    = new();
         private readonly ReportService       _report  = new();
-        private readonly ServicesManager    _services = new();
+        private readonly ServicesManager    _services;
+        private readonly WindowsServicesViewModel _servicesVm = new();
 
         private readonly UIElement[] _tabs;
         private readonly Button[]    _tabBtns;
@@ -25,6 +30,7 @@ namespace SysSuite.Views
         public MainSuitePage()
         {
             InitializeComponent();
+            _services = new ServicesManager(App.Services.GetRequiredService<SystemRestoreService>());
             _clean.Log    += AppendLog;
             _repair.Log   += AppendLog;
             _perf.Log     += AppendLog;
@@ -40,7 +46,7 @@ namespace SysSuite.Views
                 var s = SettingsService.Load();
                 int startTab = s.LastOptimizationTab;
                 SwitchTab(Math.Clamp(startTab, 0, _tabs.Length - 1));
-                LoadServices();
+                await LoadServicesAsync();
                 await RefreshCurrentPlanAsync();
                 RefreshScheduleStatus();
             };
@@ -298,49 +304,73 @@ namespace SysSuite.Views
         }
 
         // ── Servizi Windows ────────────────────────────────────────
-        private void LoadServices()
+        private async Task LoadServicesAsync()
         {
             try
             {
+                await _servicesVm.RefreshAsync(_services).ConfigureAwait(true);
+                var red = new SolidColorBrush(Color.FromArgb(255, 255, 90, 90));
+                var green = new SolidColorBrush(Color.FromArgb(255, 52, 211, 153));
                 LvServices.ItemsSource = ServicesManager.SafeToDisable
                     .Select(kv =>
                     {
-                        var status = _services.GetStatus(kv.Key);
-                        bool running = status == System.ServiceProcess.ServiceControllerStatus.Running;
-                        return new
-                        {
-                            Name        = kv.Key,
-                            Description = kv.Value,
-                            Status      = running ? "In esecuzione" : "Fermato",
-                            StatusColor = running
-                                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                                    Windows.UI.Color.FromArgb(255, 255, 90, 90))
-                                : new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                                    Windows.UI.Color.FromArgb(255, 52, 211, 153))
-                        };
-                    }).ToList();
+                        SysSuite.Models.WindowsServiceListItem? row = _servicesVm.Services
+                            .FirstOrDefault(x => x.Name.Equals(kv.Key, StringComparison.OrdinalIgnoreCase));
+                        bool running = row?.CurrentState == 4;
+                        return new ServiceUiRow(
+                            kv.Key,
+                            kv.Value,
+                            running ? "In esecuzione" : "Fermato",
+                            running ? red : green);
+                    })
+                    .ToList();
             }
-            catch (Exception ex) { AppendLog("Servizi: " + ex.Message, "err"); }
+            catch (Exception ex)
+            {
+                AppendLog("Servizi: " + ex.Message, "err");
+            }
         }
 
-        private void BtnSvcRefresh_Click(object s, RoutedEventArgs e) => LoadServices();
+        private async void BtnSvcRefresh_Click(object s, RoutedEventArgs e) => await LoadServicesAsync();
 
-        private void BtnSvcDisable_Click(object s, RoutedEventArgs e)
+        private async void BtnSvcDisable_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Disabilita servizio")) return;
-            if (LvServices.SelectedIndex < 0) { AppendLog("Seleziona un servizio.", "warn"); return; }
-            var name = ServicesManager.SafeToDisable.Keys.ElementAt(LvServices.SelectedIndex);
-            try { _services.Disable(name); LoadServices(); }
-            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            if (LvServices.SelectedItem is not ServiceUiRow row)
+            {
+                AppendLog("Seleziona un servizio.", "warn");
+                return;
+            }
+
+            try
+            {
+                await _services.DisableAsync(row.Name).ConfigureAwait(true);
+                await LoadServicesAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                AppendLog(ex.Message, "err");
+            }
         }
 
-        private void BtnSvcEnable_Click(object s, RoutedEventArgs e)
+        private async void BtnSvcEnable_Click(object s, RoutedEventArgs e)
         {
             if (!CheckAdmin("Abilita servizio")) return;
-            if (LvServices.SelectedIndex < 0) { AppendLog("Seleziona un servizio.", "warn"); return; }
-            var name = ServicesManager.SafeToDisable.Keys.ElementAt(LvServices.SelectedIndex);
-            try { _services.Enable(name); LoadServices(); }
-            catch (Exception ex) { AppendLog(ex.Message, "err"); }
+            if (LvServices.SelectedItem is not ServiceUiRow row)
+            {
+                AppendLog("Seleziona un servizio.", "warn");
+                return;
+            }
+
+            try
+            {
+                await _services.EnableAsync(row.Name).ConfigureAwait(true);
+                await LoadServicesAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                AppendLog(ex.Message, "err");
+            }
         }
 
                 private async Task RefreshCurrentPlanAsync()

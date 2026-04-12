@@ -37,6 +37,7 @@ namespace SysSuite
             services.AddSingleton<DiskAnalyzer>();
             services.AddSingleton<CleanupService>();
             services.AddSingleton<RamOptimizerService>();
+            services.AddSingleton<SystemRestoreService>();
             services.AddTransient<SystemInfo>();
             services.AddTransient<DiscoViewModel>();
             services.AddTransient<BatteryViewModel>();
@@ -46,6 +47,7 @@ namespace SysSuite
             services.AddTransient<PrivacyViewModel>();
             services.AddTransient<BrowserViewModel>();
             services.AddSingleton<ProcessManager>();
+            services.AddSingleton<StartupEntriesService>();
             services.AddSingleton<LeftoverScannerService>();
             services.AddTransient<AppManagerViewModel>();
             services.AddTransient(sp => new MonitorViewModel(

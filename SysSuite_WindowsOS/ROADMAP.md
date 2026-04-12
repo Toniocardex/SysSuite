@@ -2,6 +2,8 @@
 
 ## Versione attuale: v1.5.0
 
+Traccia **v2.1 (Refined)** — prestazioni native e ripristino: vedi sezione dedicata in fondo (completata).
+
 ---
 
 ## ✅ Livello 1: Sicurezza (Logging & Exception Handling) — Completato
@@ -103,6 +105,42 @@
       Pianificazione giornaliera/settimanale/mensile senza admin
       Mostra stato e prossima esecuzione nell'UI
       Rimozione pianificazione con un click
+
+---
+
+## ✅ v2.1 (Refined) — Prestazioni native, servizi & ripristino — Completato
+
+Obiettivo: ridurre overhead managed dove conta (enumerazioni, monitor) e allineare modifiche di sistema a checkpoint di ripristino prima di operazioni invasive.
+
+### Ripristino configurazione (WMI)
+- [x] `SystemRestoreService` (`root\default:SystemRestore`): verifica stato ripristino, creazione punto di ripristino asincrona (`Task.Run` + WMI)
+- [x] Singleton registrato in DI (`App.xaml.cs`); integrazione prima di **Stop/Disable servizio** e flussi startup sensibili
+
+### Monitor processi (percorso v2.1)
+- [x] Enumerazione processi via `NtQuerySystemInformation` (interop nativa), CPU da delta kernel/user, cache percorsi; `ProcessManager` refactor; `AllowUnsafeBlocks` nel progetto
+
+### Avvio con Windows (Startup)
+- [x] Lettura voci avvio da registry nativo (`Interop/NtRegistry.cs` + `StartupEntriesService`); scrittura/disabilitazione lato managed dove necessario
+- [x] Checkpoint `SystemRestoreService` prima di disabilitare voci startup (registry/file)
+
+### Servizi Windows — enumerazione ultra-veloce
+- [x] `Interop/NtServices.cs`: P/Invoke `advapi32` — `OpenSCManagerW`, `EnumServicesStatusExW`, `CloseServiceHandle`
+- [x] Enumerazione con livello `SC_ENUM_PROCESS_INFO` (`NtServices.ScEnumProcessInfo`)
+- [x] Buffer riusabile `NativeMemory` (fino a 256 KiB); parsing righe con `ReadOnlySpan<byte>` + `MemoryMarshal` su struct SCM
+- [x] Tipo avvio da hive `HKLM\SYSTEM\CurrentControlSet\Services` (valore `Start`)
+- [x] `ServicesManager`: `EnumerateAllServicesNative()`, cache stato `_lastStateByName` per `GetStatus`; `DisableAsync` / `EnableAsync` / `RestartAsync`
+- [x] **Sicurezza:** `CreateRestorePointAsync` (se ripristino attivo) **prima** di stop + `sc config` su disable
+- [x] Modello leggero `WindowsServiceListItem`; `WindowsServicesViewModel` + `RefreshAsync` su thread pool
+
+### UI & integrazione
+- [x] `MainSuitePage`: `ServicesManager` con `SystemRestoreService` da DI, tab Servizi async (`LoadServicesAsync`), righe `ServiceUiRow`, disable/enable async
+- [x] `GamingService`: costruttore con `SystemRestoreService`, `DisableAsync`/`EnableAsync` per servizi Xbox
+
+### Build
+- [x] `ServicesManager`: buffer SCM come `nint` + blocchi `unsafe` mirati per `NativeMemory`
+- [x] Build soluzione: **0 errori, 0 avvisi** (`dotnet build SysSuite.sln`)
+
+> **Nota performance:** il risparmio su ~400+ servizi non è numerato nel repo; per una cifra reale misurare con `Stopwatch` (enum nativa vs `ServiceController.GetServices()`).
 
 ---
 
