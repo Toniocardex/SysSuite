@@ -2,7 +2,7 @@
 
 ## Versione attuale: v1.5.0
 
-Traccia **v2.1 (Refined)** — prestazioni native e ripristino: vedi sezione dedicata in fondo (completata).
+Traccia **v2.1 (Refined)** — prestazioni native e ripristino: sezione dedicata dopo v1.3.0 (completata).
 
 ---
 
