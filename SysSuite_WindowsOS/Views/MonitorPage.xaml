@@ -7,7 +7,7 @@
     Background="{StaticResource SysBGBrush}"
     Loaded="MonitorPage_Loaded"
     Unloaded="MonitorPage_Unloaded">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <!-- Root Grid (no ScrollViewer esterno): la riga * dà altezza finita al ListView → virtualizzazione attiva. -->
     <Grid Padding="32,24" MaxWidth="1100" HorizontalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -101,6 +101,11 @@
                     <ListView Grid.Row="1" Background="Transparent" BorderThickness="0"
                         ItemsSource="{Binding ProcessItems, Mode=OneWay}"
                         SelectedItem="{Binding SelectedProcess, Mode=TwoWay}">
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel Orientation="Vertical"/>
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:ProcessEntry">
                                 <Grid Padding="0,4">
@@ -132,5 +137,4 @@
             </Border>
         </Grid>
     </Grid>
-    </ScrollViewer>
 </Page>

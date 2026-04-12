@@ -46,7 +46,8 @@ namespace SysSuite.Models
             get => _cpuPercent;
             set
             {
-                if (Math.Abs(_cpuPercent - value) < 0.0001) return;
+                // Epsilon più ampio: evita PropertyChanged ogni tick su jitter sotto‑decimale (lista processi).
+                if (Math.Abs(_cpuPercent - value) < 0.02) return;
                 _cpuPercent = value;
                 OnPropertyChanged();
                 RefreshCpuBindings();
@@ -132,6 +133,22 @@ namespace SysSuite.Models
             Path = src.Path;
             Description = src.Description;
             StartTime = src.StartTime;
+        }
+
+        /// <summary>Primo inserimento in cache/lista: copia completa dal campione.</summary>
+        public void InitializeFromSample(ProcessEntry sample)
+        {
+            PID = sample.PID;
+            CopyMetricsFrom(sample);
+        }
+
+        /// <summary>Aggiornamento differenziale: solo CPU, RAM e stato (in esecuzione / non risponde).</summary>
+        public void ApplyDynamicMetricsFrom(ProcessEntry sample)
+        {
+            if (sample.PID != PID) return;
+            CpuPercent = sample.CpuPercent;
+            RamMB = sample.RamMB;
+            Responding = sample.Responding;
         }
 
         private void RefreshCpuBindings()

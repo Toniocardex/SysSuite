@@ -22,6 +22,8 @@ namespace SysSuite.ViewModels
     /// Monitor live: campionamento CPU/RAM, grafico LiveCharts2, lista processi.
     /// Il polling è su <see cref="DispatcherTimer"/> (thread UI); WMI/rete/processi in <see cref="Task.Run"/>
     /// serializzati con <see cref="SemaphoreSlim"/> (1,1) — nessun accavallamento (Smart Sync).
+    /// Lista processi: aggiornamento differenziale (<see cref="ApplyDifferentialUpdate"/>), cache PID →
+    /// <see cref="ProcessEntry"/>, niente <c>ProcessItems.Clear()</c>.
     /// Il <see cref="DispatcherQueue"/> viene iniettato nel costruttore (catturato sul thread UI in DI);
     /// le proprietà osservabili e le <see cref="ObservableCollection{T}"/> si aggiornano solo dentro
     /// <c>_dispatcher.TryEnqueue</c>. Non usare <see cref="DispatcherQueue.GetForCurrentThread"/> nei Task in background.
@@ -49,6 +51,9 @@ namespace SysSuite.ViewModels
         private readonly ISeries[] _chartSeries;
         private readonly ICartesianAxis[] _chartXAxes;
         private readonly ICartesianAxis[] _chartYAxes;
+
+        /// <summary>Cache PID → <see cref="ProcessEntry"/> (modello processo in lista).</summary>
+        private readonly Dictionary<int, ProcessEntry> _processCache = new(384);
 
         public IEnumerable<ISeries> ChartSeries => _chartSeries;
         public IEnumerable<ICartesianAxis> ChartXAxes => _chartXAxes;
@@ -260,7 +265,7 @@ namespace SysSuite.ViewModels
                     try
                     {
                         ApplyLiveCpuRamSample(cpu, ram, netText);
-                        MergeProcessesList(sorted);
+                        ApplyDifferentialUpdate(sorted);
                         ProcessCountText = countText;
                     }
                     catch
@@ -322,7 +327,7 @@ namespace SysSuite.ViewModels
                     try
                     {
                         ApplyLiveCpuRamSample(cpu, ram, netText);
-                        MergeProcessesList(sorted);
+                        ApplyDifferentialUpdate(sorted);
                         ProcessCountText = countText;
                     }
                     catch { }
@@ -445,56 +450,64 @@ namespace SysSuite.ViewModels
                 _ => sortAsc ? procs.OrderBy(p => p.RamMB) : procs.OrderByDescending(p => p.RamMB)
             };
 
-        private void MergeProcessesList(List<ProcessEntry> sorted)
+        /// <summary>
+        /// Aggiornamento differenziale: niente <see cref="ObservableCollection{T}.Clear()"/>; ciclo lineare sui nuovi dati
+        /// dopo rimozione inversa delle righe uscite; nuovo PID → crea modello, cache e lista; esistente → solo CPU/RAM/stato.
+        /// </summary>
+        private void ApplyDifferentialUpdate(IReadOnlyList<ProcessEntry> incoming)
         {
-            var sortedPids = new HashSet<int>(sorted.Select(p => p.PID));
+            var incomingPids = new HashSet<int>(incoming.Count);
+            foreach (ProcessEntry s in incoming)
+                incomingPids.Add(s.PID);
 
-            for (int i = ProcessItems.Count - 1; i >= 0; i--)
+            for (int r = ProcessItems.Count - 1; r >= 0; r--)
             {
-                if (!sortedPids.Contains(ProcessItems[i].PID))
-                    ProcessItems.RemoveAt(i);
+                int pid = ProcessItems[r].PID;
+                if (incomingPids.Contains(pid))
+                    continue;
+                ProcessItems.RemoveAt(r);
+                _processCache.Remove(pid);
             }
 
-            var srcByPid = sorted.ToDictionary(p => p.PID);
-
-            foreach (var live in ProcessItems)
+            for (int i = 0; i < incoming.Count; i++)
             {
-                if (srcByPid.TryGetValue(live.PID, out var snap))
-                    live.CopyMetricsFrom(snap);
-            }
-
-            var livePids = new HashSet<int>(ProcessItems.Select(p => p.PID));
-            foreach (var snap in sorted)
-            {
-                if (!livePids.Contains(snap.PID))
-                    ProcessItems.Add(snap);
-            }
-
-            SyncOrderTo(ProcessItems, sorted);
-        }
-
-        private static void SyncOrderTo(ObservableCollection<ProcessEntry> items, List<ProcessEntry> sorted)
-        {
-            for (int t = 0; t < sorted.Count; t++)
-            {
-                int wantPid = sorted[t].PID;
-                int found = -1;
-                for (int i = t; i < items.Count; i++)
+                ProcessEntry snap = incoming[i];
+                if (!_processCache.TryGetValue(snap.PID, out ProcessEntry? row))
                 {
-                    if (items[i].PID != wantPid)
+                    row = new ProcessEntry();
+                    row.InitializeFromSample(snap);
+                    _processCache[snap.PID] = row;
+                }
+                else
+                {
+                    row.ApplyDynamicMetricsFrom(snap);
+                }
+
+                if (i < ProcessItems.Count && ReferenceEquals(ProcessItems[i], row))
+                    continue;
+
+                int found = -1;
+                for (int j = i; j < ProcessItems.Count; j++)
+                {
+                    if (!ReferenceEquals(ProcessItems[j], row))
                         continue;
-                    found = i;
+                    found = j;
                     break;
                 }
 
-                if (found < 0)
-                    continue;
-                if (found != t)
-                    items.Move(found, t);
+                if (found >= 0)
+                {
+                    if (found != i)
+                        ProcessItems.Move(found, i);
+                }
+                else
+                {
+                    ProcessItems.Insert(i, row);
+                }
             }
 
-            while (items.Count > sorted.Count)
-                items.RemoveAt(items.Count - 1);
+            while (ProcessItems.Count > incoming.Count)
+                ProcessItems.RemoveAt(ProcessItems.Count - 1);
         }
 
         private void ShutdownCore()
@@ -529,6 +542,14 @@ namespace SysSuite.ViewModels
                     }
                     catch { }
                 }
+
+                try
+                {
+                    while (ProcessItems.Count > 0)
+                        ProcessItems.RemoveAt(ProcessItems.Count - 1);
+                    _processCache.Clear();
+                }
+                catch { }
 
                 try
                 {

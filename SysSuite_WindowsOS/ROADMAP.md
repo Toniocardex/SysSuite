@@ -136,6 +136,7 @@ Obiettivo: ridurre overhead managed dove conta (enumerazioni, monitor) e allinea
 - [x] `MainSuitePage`: `ServicesManager` con `SystemRestoreService` da DI, tab Servizi async (`LoadServicesAsync`), righe `ServiceUiRow`, disable/enable async
 - [x] `GamingService`: costruttore con `SystemRestoreService`, `DisableAsync`/`EnableAsync` per servizi Xbox
 - [x] **Brand / icone:** `Assets/Brand/` — `AppIcon.ico` (multi-size + `ApplicationIcon` + `AppWindow.SetIcon`), `Logo512.png` (sidebar `MainWindow`), **`Logo256.png`** (viste compatte: intestazione **HubPage**, **SettingsPage**); `Content` con copia in output
+- [x] **Monitor — Surgical UI Sync:** `MonitorViewModel` — cache `Dictionary` PID → `ProcessEntry`, niente `ProcessItems.Clear()`, sync differenziale (`SurgicalSyncProcessList`), early-exit se stessi ref/ordine, throttle lista completa 2s se più di 200 processi con aggiornamento metriche leggero sulle righe visibili; `ProcessEntry.CpuPercent` con epsilon 0.02; **MonitorPage** senza `ScrollViewer` esterno su tutta la pagina + `ItemsStackPanel` sul `ListView` per virtualizzazione
 
 ### Build
 - [x] `ServicesManager`: buffer SCM come `nint` + blocchi `unsafe` mirati per `NativeMemory`
