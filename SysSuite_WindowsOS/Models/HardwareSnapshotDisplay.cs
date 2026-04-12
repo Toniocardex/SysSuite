@@ -1,7 +1,7 @@
 namespace SysSuite.Models;
 
 /// <summary>
-/// Solo testi statici per lo snapshot hardware (DTO per <c>x:Bind</c> OneTime nello UserControl dedicato).
+/// Solo testi statici per lo snapshot hardware (DTO per <c>x:Bind</c> OneTime sulla Dashboard).
 /// </summary>
 public sealed class HardwareSnapshotDisplay
 {

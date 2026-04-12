@@ -11,8 +11,8 @@ public sealed partial class DashboardPage : Page
 
     public DashboardPage()
     {
-        InitializeComponent();
         ViewModel = App.Services.GetRequiredService<HubViewModel>();
+        InitializeComponent();
         DataContext = ViewModel;
         Loaded += (_, _) => ViewModel.LoadDashboardDataCommand.Execute(null);
         Unloaded += (_, _) => ViewModel.Dispose();

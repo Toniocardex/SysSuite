@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,7 +8,9 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using SkiaSharp;
+using Windows.UI;
 using SysSuite;
 using SysSuite.Core;
 using SysSuite.Models;
@@ -19,12 +19,12 @@ using SysSuite.Services;
 namespace SysSuite.ViewModels
 {
     /// <summary>
-    /// Dashboard: <see cref="SystemInfo.GatherAll"/> all'avvio, polling 1,5 s (CPU/RAM/GPU/rete/uptime),
-    /// disco C: ogni 20 tick (~30 s con intervallo 1,5 s). GPU live: <see cref="GpuUsagePercentage"/> / <see cref="GpuUsedVram"/> via <see cref="GpuMonitorService"/> (DXGI).
+    /// Dashboard: <see cref="SystemInfo.GatherAll"/> all'avvio. Donut disco (LiveCharts) aggiornato ogni 30 s; GPU DXGI ogni 10 s.
     /// </summary>
     public partial class HubViewModel : ObservableObject, IDisposable
     {
-        private const int DiskRefreshIntervalTicks = 20;
+        private static readonly TimeSpan GpuRefreshInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan DiskRefreshInterval = TimeSpan.FromSeconds(30);
 
         private readonly DispatcherQueue _dispatcher;
         private readonly SystemInfo _systemInfo;
@@ -34,22 +34,24 @@ namespace SysSuite.ViewModels
         private readonly RamOptimizerService _ramOptimizer;
         private readonly GpuMonitorService _gpuMonitor;
 
-        private readonly DispatcherTimer _dashTimer;
-        private readonly PerformanceCounter? _cpuCounter;
-
-        private long _netPrevBytesReceived;
-        private long _netPrevBytesSent;
-        private long _netPrevTickMs;
-        private int _diskTickCounter;
-        private int _dashboardTickBusy;
+        private readonly DispatcherTimer _gpuSlowTimer;
+        private readonly DispatcherTimer _diskRefreshTimer;
+        private int _gpuTickBusy;
+        private int _diskTickBusy;
         private DateTime _bootWallUtc;
         private bool _dashboardFirstPaint = true;
         private bool _disposed;
 
         private static readonly SKColor DonutBg = new(20, 24, 40);
-        private static readonly SKColor RamAccent = new(59, 158, 255);
         private static readonly SKColor DiskAccent = new(255, 181, 71);
-        private static readonly SKColor GpuLiveAccent = new(167, 139, 250);
+
+        /// <summary>Pennelli brand GPU (singleton): nessuna nuova allocazione a ogni tick DXGI.</summary>
+        private static readonly SolidColorBrush GpuBrandBrushNvidia = new(Color.FromArgb(255, 0x76, 0xB9, 0x00));
+        private static readonly SolidColorBrush GpuBrandBrushAmd = new(Color.FromArgb(255, 0xED, 0x1C, 0x24));
+        private static readonly SolidColorBrush GpuBrandBrushIntel = new(Color.FromArgb(255, 0x00, 0x71, 0xC5));
+        private static readonly SolidColorBrush GpuBrandBrushDefault = new(Color.FromArgb(255, 0x3B, 0x9E, 0xFF));
+
+        private GpuBrandKind _gpuBrandKind = GpuBrandKind.Default;
 
         public HubViewModel(
             DispatcherQueue dispatcher,
@@ -68,47 +70,49 @@ namespace SysSuite.ViewModels
             _ramOptimizer = ramOptimizer;
             _gpuMonitor = gpuMonitor ?? throw new ArgumentNullException(nameof(gpuMonitor));
 
-            RamDonutSeries = BuildDonutSeries(0, RamAccent, DonutBg);
-            DiskDonutSeries = BuildDonutSeries(0, DiskAccent, DonutBg);
-            GpuLiveDonutSeries = BuildDonutSeries(0, GpuLiveAccent, DonutBg);
+            _gpuSlowTimer = new DispatcherTimer { Interval = GpuRefreshInterval };
+            _gpuSlowTimer.Tick += OnGpuSlowTimerTick;
 
-            try
-            {
-                _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                _cpuCounter.NextValue();
-            }
-            catch
-            {
-                _cpuCounter = null;
-            }
+            _diskRefreshTimer = new DispatcherTimer { Interval = DiskRefreshInterval };
+            _diskRefreshTimer.Tick += OnDiskRefreshTimerTick;
 
-            _dashTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
-            _dashTimer.Tick += OnDashboardTimerTick;
+            DiskDonutSeries = BuildDiskDonutSeries(0);
         }
 
-        private void OnDashboardTimerTick(object? sender, object e)
+        private void OnGpuSlowTimerTick(object? sender, object e)
         {
-            _ = DashboardTimerWorkAsync();
+            ApplyGpuSlowSampleToUi();
+        }
+
+        private void OnDiskRefreshTimerTick(object? sender, object e)
+        {
+            _ = RefreshDiskVolumeUiAsync();
         }
 
         [ObservableProperty] private string _subtitleText = "Caricamento informazioni sistema...";
 
-        [ObservableProperty] private string _cpuLoadPercentText = "—";
+        /// <summary>Righe CPU per card (testo strutturato, senza muro di newline).</summary>
+        [ObservableProperty] private string _dashboardCpuName = "—";
+        [ObservableProperty] private string _dashboardCpuCoresLine = "";
+        [ObservableProperty] private string _dashboardCpuFreqLine = "";
 
         [ObservableProperty] private string _ramUsedPercentText = "—";
         [ObservableProperty] private string _ramDetailText = "—";
         [ObservableProperty] private string _ramCommercialText = "—";
-        [ObservableProperty] private ISeries[] _ramDonutSeries = Array.Empty<ISeries>();
+        /// <summary>0–100 per ProgressBar RAM (snapshot al load / dopo refresh esplicito).</summary>
+        [ObservableProperty] private double _ramUsedPercentValue;
 
         [ObservableProperty] private string _diskFreeText = "—";
         [ObservableProperty] private string _diskTotalText = "—";
+        /// <summary>0–100 per ProgressBar disco (snapshot).</summary>
+        [ObservableProperty] private double _diskUsedPercentValue;
+
+        /// <summary>Donut LiveCharts solo per card Archiviazione (aggiornato con il timer 30 s).</summary>
         [ObservableProperty] private ISeries[] _diskDonutSeries = Array.Empty<ISeries>();
 
         [ObservableProperty] private string _osNameText = "—";
         [ObservableProperty] private string _osVersionText = "—";
         [ObservableProperty] private string _liveUptimeText = "—";
-
-        [ObservableProperty] private string _networkThroughputText = "—";
 
         [ObservableProperty] private string _snapshotLocalIpText = "—";
 
@@ -119,7 +123,11 @@ namespace SysSuite.ViewModels
 
         /// <summary>VRAM usata/totale formattata da DXGI (<see cref="GpuMonitorService"/>).</summary>
         [ObservableProperty] private string _gpuUsedVram = "—";
-        [ObservableProperty] private ISeries[] _gpuLiveDonutSeries = Array.Empty<ISeries>();
+        /// <summary>0–100 uso GPU per ProgressBar (aggiornamento lento).</summary>
+        [ObservableProperty] private double _gpuUsagePercentValue;
+
+        /// <summary>Colore brand GPU (icona + barra VRAM); aggiornato solo se il vendor DXGI cambia.</summary>
+        [ObservableProperty] private SolidColorBrush _gpuBrandBrush = GpuBrandBrushDefault;
 
         [ObservableProperty] private string _systemDiskModel = "N/D";
 
@@ -163,7 +171,7 @@ namespace SysSuite.ViewModels
             _dispatcher.TryEnqueue(() =>
             {
                 ApplySystemInfo(_systemInfo);
-                PushLiveSampleToUi(updateDisk: true);
+                ApplyRamDiskGpuSnapshots();
                 if (_dashboardFirstPaint)
                 {
                     MainContentVisibility = Visibility.Visible;
@@ -171,8 +179,10 @@ namespace SysSuite.ViewModels
                     _dashboardFirstPaint = false;
                 }
 
-                if (!_dashTimer.IsEnabled)
-                    _dashTimer.Start();
+                if (!_gpuSlowTimer.IsEnabled)
+                    _gpuSlowTimer.Start();
+                if (!_diskRefreshTimer.IsEnabled)
+                    _diskRefreshTimer.Start();
             });
         }
 
@@ -211,13 +221,17 @@ namespace SysSuite.ViewModels
                 RamOptimizerStatusText = usedMb + " MB usati — " + freeMb + " MB liberi";
 
                 string freqLine = info.CPUFreqStr.Length > 0 ? "Max " + info.CPUFreqStr : "";
+                DashboardCpuName = string.IsNullOrWhiteSpace(info.CPUName) ? "—" : info.CPUName.Trim();
+                DashboardCpuCoresLine = info.CPUCores + " core / " + info.CPUThreads + " thread · " + info.CPUArch;
+                DashboardCpuFreqLine = string.IsNullOrWhiteSpace(freqLine) ? "" : freqLine;
+
                 string processorText = string.Join(
                     Environment.NewLine,
                     new[]
                     {
-                        string.IsNullOrWhiteSpace(info.CPUName) ? "—" : info.CPUName.Trim(),
-                        info.CPUCores + " core / " + info.CPUThreads + " thread  " + info.CPUArch,
-                        freqLine
+                        DashboardCpuName,
+                        DashboardCpuCoresLine,
+                        DashboardCpuFreqLine
                     }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
                 string gpuModelText = string.IsNullOrWhiteSpace(info.GPUName) ? "—" : info.GPUName.Trim();
@@ -249,44 +263,31 @@ namespace SysSuite.ViewModels
             }
         }
 
-        private async Task DashboardTimerWorkAsync()
+        /// <summary>Snapshot RAM/disco (nessun polling) + primo campione GPU; chiamare sul thread UI dopo <see cref="ApplySystemInfo"/>.</summary>
+        private void ApplyRamDiskGpuSnapshots()
         {
-            if (Interlocked.Exchange(ref _dashboardTickBusy, 1) == 1)
-                return;
-
-            double cpu = 0;
-            if (_cpuCounter != null)
-            {
-                try
-                {
-                    cpu = Math.Round(_cpuCounter.NextValue(), 1);
-                }
-                catch
-                {
-                    cpu = 0;
-                }
-            }
-
             RamOptimizerService.TryGetRamUsedPercent(out var ramPct, out var totalMb, out var freeMb);
             double ramTotalGb = totalMb / 1024.0;
             double ramFreeGb = freeMb / 1024.0;
+            RamUsedPercentText = ramPct.ToString("0.#") + "%";
+            RamDetailText = ramTotalGb.ToString("0.#") + " GB fisici — " + ramFreeGb.ToString("0.#") + " GB liberi";
+            RamUsedPercentValue = ramPct;
 
-            var gpuMetrics = _gpuMonitor.GetGpuMetrics();
-            string gpuPctStr = gpuMetrics.UsagePercentage.ToString("0.#") + "%";
-            string gpuVramStr = FormatBytes(gpuMetrics.UsedVramBytes) + " / " + FormatBytes(gpuMetrics.TotalVramBytes);
+            double diskUsedPct = _systemInfo.DiskUsedPct;
+            DiskFreeText = _systemInfo.DiskFreeGB.ToString("0.#") + " GB liberi";
+            DiskTotalText = _systemInfo.DiskTotalGB + " GB totali — " + diskUsedPct.ToString("0.#") + "% usato";
+            DiskUsedPercentValue = diskUsedPct;
+            DiskDonutSeries = BuildDiskDonutSeries(diskUsedPct);
 
-            string netLine = ComputeNetworkRatesText();
-            var uptime = FormatUptime(DateTime.Now - _bootWallUtc);
+            ApplyGpuMetricsToProperties(_gpuMonitor.GetGpuMetrics());
+        }
 
-            bool refreshDisk = false;
-            var next = Interlocked.Increment(ref _diskTickCounter);
-            if (next >= DiskRefreshIntervalTicks)
-            {
-                Interlocked.Exchange(ref _diskTickCounter, 0);
-                refreshDisk = true;
-            }
+        private async Task RefreshDiskVolumeUiAsync()
+        {
+            if (Interlocked.Exchange(ref _diskTickBusy, 1) == 1)
+                return;
 
-            if (refreshDisk)
+            try
             {
                 try
                 {
@@ -294,87 +295,116 @@ namespace SysSuite.ViewModels
                 }
                 catch
                 {
-                    /* ignore */
+                    return;
                 }
-            }
 
-            double diskUsedPct = _systemInfo.DiskUsedPct;
-            string diskFree = _systemInfo.DiskFreeGB.ToString("0.#") + " GB liberi";
-            string diskTotal = _systemInfo.DiskTotalGB + " GB totali — " + diskUsedPct.ToString("0.#") + "% usato";
-
-            try
-            {
+                double diskUsedPct = _systemInfo.DiskUsedPct;
                 _dispatcher.TryEnqueue(() =>
                 {
                     if (_disposed)
                         return;
-
-                    CpuLoadPercentText = cpu.ToString("0.#") + "%";
-                    RamUsedPercentText = ramPct.ToString("0.#") + "%";
-                    RamDetailText = ramTotalGb.ToString("0.#") + " GB fisici — " + ramFreeGb.ToString("0.#") + " GB liberi";
-                    RamDonutSeries = BuildDonutSeries(ramPct, RamAccent, DonutBg);
-
-                    GpuUsagePercentage = gpuPctStr;
-                    GpuUsedVram = gpuVramStr;
-                    GpuLiveDonutSeries = BuildDonutSeries(gpuMetrics.UsagePercentage, GpuLiveAccent, DonutBg);
-
-                    NetworkThroughputText = netLine;
-                    LiveUptimeText = uptime;
-
-                    if (refreshDisk)
-                    {
-                        DiskFreeText = diskFree;
-                        DiskTotalText = diskTotal;
-                        DiskDonutSeries = BuildDonutSeries(diskUsedPct, DiskAccent, DonutBg);
-                    }
+                    DiskFreeText = _systemInfo.DiskFreeGB.ToString("0.#") + " GB liberi";
+                    DiskTotalText = _systemInfo.DiskTotalGB + " GB totali — " + diskUsedPct.ToString("0.#") + "% usato";
+                    DiskUsedPercentValue = diskUsedPct;
+                    DiskDonutSeries = BuildDiskDonutSeries(diskUsedPct);
                 });
             }
             finally
             {
-                Interlocked.Exchange(ref _dashboardTickBusy, 0);
+                Interlocked.Exchange(ref _diskTickBusy, 0);
             }
         }
 
-        /// <summary>Un campionamento immediato (disco incluso) prima del primo tick.</summary>
-        private void PushLiveSampleToUi(bool updateDisk)
+        private static ISeries[] BuildDiskDonutSeries(double valuePct)
         {
-            double cpu = 0;
-            if (_cpuCounter != null)
+            valuePct = Math.Clamp(valuePct, 0, 100);
+            return new ISeries[]
             {
-                try
+                new PieSeries<double>
                 {
-                    cpu = Math.Round(_cpuCounter.NextValue(), 1);
-                }
-                catch
+                    Values = new[] { valuePct },
+                    InnerRadius = 32,
+                    Fill = new SolidColorPaint(DiskAccent),
+                    Stroke = null,
+                    Pushout = 0,
+                    HoverPushout = 0,
+                    DataLabelsPaint = null
+                },
+                new PieSeries<double>
                 {
-                    cpu = 0;
+                    Values = new[] { 100 - valuePct },
+                    InnerRadius = 32,
+                    Fill = new SolidColorPaint(DonutBg),
+                    Stroke = null,
+                    Pushout = 0,
+                    HoverPushout = 0,
+                    IsHoverable = false,
+                    DataLabelsPaint = null
                 }
-            }
+            };
+        }
 
-            RamOptimizerService.TryGetRamUsedPercent(out var ramPct, out var totalMb, out var freeMb);
-            double ramTotalGb = totalMb / 1024.0;
-            double ramFreeGb = freeMb / 1024.0;
+        private void ApplyGpuSlowSampleToUi()
+        {
+            if (Interlocked.Exchange(ref _gpuTickBusy, 1) == 1)
+                return;
 
-            var gpuMetrics = _gpuMonitor.GetGpuMetrics();
-
-            if (updateDisk)
+            try
             {
-                DiskFreeText = _systemInfo.DiskFreeGB.ToString("0.#") + " GB liberi";
-                DiskTotalText = _systemInfo.DiskTotalGB + " GB totali — " + _systemInfo.DiskUsedPct.ToString("0.#") + "% usato";
-                DiskDonutSeries = BuildDonutSeries(_systemInfo.DiskUsedPct, DiskAccent, DonutBg);
+                if (_disposed)
+                    return;
+
+                ApplyGpuMetricsToProperties(_gpuMonitor.GetGpuMetrics());
             }
+            finally
+            {
+                Interlocked.Exchange(ref _gpuTickBusy, 0);
+            }
+        }
 
-            CpuLoadPercentText = cpu.ToString("0.#") + "%";
-            RamUsedPercentText = ramPct.ToString("0.#") + "%";
-            RamDetailText = ramTotalGb.ToString("0.#") + " GB fisici — " + ramFreeGb.ToString("0.#") + " GB liberi";
-            RamDonutSeries = BuildDonutSeries(ramPct, RamAccent, DonutBg);
-
+        private void ApplyGpuMetricsToProperties(GpuMetrics gpuMetrics)
+        {
             GpuUsagePercentage = gpuMetrics.UsagePercentage.ToString("0.#") + "%";
             GpuUsedVram = FormatBytes(gpuMetrics.UsedVramBytes) + " / " + FormatBytes(gpuMetrics.TotalVramBytes);
-            GpuLiveDonutSeries = BuildDonutSeries(gpuMetrics.UsagePercentage, GpuLiveAccent, DonutBg);
+            GpuUsagePercentValue = gpuMetrics.UsagePercentage;
+            TrySetGpuBrandBrushFromAdapterName(gpuMetrics.Name);
+        }
 
-            NetworkThroughputText = ComputeNetworkRatesText();
-            LiveUptimeText = FormatUptime(DateTime.Now - _bootWallUtc);
+        private void TrySetGpuBrandBrushFromAdapterName(string? adapterName)
+        {
+            var kind = ClassifyGpuBrand(adapterName);
+            if (kind == _gpuBrandKind)
+                return;
+            _gpuBrandKind = kind;
+            GpuBrandBrush = kind switch
+            {
+                GpuBrandKind.Nvidia => GpuBrandBrushNvidia,
+                GpuBrandKind.Amd => GpuBrandBrushAmd,
+                GpuBrandKind.Intel => GpuBrandBrushIntel,
+                _ => GpuBrandBrushDefault,
+            };
+        }
+
+        private static GpuBrandKind ClassifyGpuBrand(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return GpuBrandKind.Default;
+            if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                return GpuBrandKind.Nvidia;
+            if (name.Contains("AMD", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Radeon", StringComparison.OrdinalIgnoreCase))
+                return GpuBrandKind.Amd;
+            if (name.Contains("Intel", StringComparison.OrdinalIgnoreCase))
+                return GpuBrandKind.Intel;
+            return GpuBrandKind.Default;
+        }
+
+        private enum GpuBrandKind
+        {
+            Nvidia,
+            Amd,
+            Intel,
+            Default,
         }
 
         private static string FormatUptime(TimeSpan ts)
@@ -395,94 +425,15 @@ namespace SysSuite.ViewModels
             return mb.ToString("0.#") + " MB";
         }
 
-        private string ComputeNetworkRatesText()
-        {
-            try
-            {
-                long inB = 0, outB = 0;
-                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    if (nic.OperationalStatus != OperationalStatus.Up)
-                        continue;
-                    if (nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
-                        continue;
-                    IPInterfaceStatistics s = nic.GetIPStatistics();
-                    inB += s.BytesReceived;
-                    outB += s.BytesSent;
-                }
-
-                long now = Environment.TickCount64;
-                if (_netPrevTickMs == 0)
-                {
-                    _netPrevBytesReceived = inB;
-                    _netPrevBytesSent = outB;
-                    _netPrevTickMs = now;
-                    return "↑ —   ↓ —";
-                }
-
-                double dtMs = now - _netPrevTickMs;
-                if (dtMs < 1)
-                    dtMs = 1;
-                double downBps = (inB - _netPrevBytesReceived) / (dtMs / 1000.0);
-                double upBps = (outB - _netPrevBytesSent) / (dtMs / 1000.0);
-                _netPrevBytesReceived = inB;
-                _netPrevBytesSent = outB;
-                _netPrevTickMs = now;
-
-                return "↑ " + FormatDataRate(upBps) + "   ↓ " + FormatDataRate(downBps);
-            }
-            catch
-            {
-                return "↑ —   ↓ —";
-            }
-        }
-
-        private static string FormatDataRate(double bytesPerSecond)
-        {
-            if (bytesPerSecond < 1024)
-                return bytesPerSecond.ToString("0") + " B/s";
-            if (bytesPerSecond < 1024 * 1024)
-                return (bytesPerSecond / 1024).ToString("0.#") + " KB/s";
-            return (bytesPerSecond / (1024 * 1024)).ToString("0.##") + " MB/s";
-        }
-
-        private static ISeries[] BuildDonutSeries(double valuePct, SKColor color, SKColor background)
-        {
-            valuePct = Math.Clamp(valuePct, 0, 100);
-            return new ISeries[]
-            {
-                new PieSeries<double>
-                {
-                    Values = new[] { valuePct },
-                    InnerRadius = 28,
-                    Fill = new SolidColorPaint(color),
-                    Stroke = null,
-                    Pushout = 0,
-                    HoverPushout = 0,
-                    DataLabelsPaint = null
-                },
-                new PieSeries<double>
-                {
-                    Values = new[] { 100 - valuePct },
-                    InnerRadius = 28,
-                    Fill = new SolidColorPaint(background),
-                    Stroke = null,
-                    Pushout = 0,
-                    HoverPushout = 0,
-                    IsHoverable = false,
-                    DataLabelsPaint = null
-                }
-            };
-        }
-
         public void Dispose()
         {
             if (_disposed)
                 return;
             _disposed = true;
-            _dashTimer.Stop();
-            _dashTimer.Tick -= OnDashboardTimerTick;
-            _cpuCounter?.Dispose();
+            _gpuSlowTimer.Stop();
+            _gpuSlowTimer.Tick -= OnGpuSlowTimerTick;
+            _diskRefreshTimer.Stop();
+            _diskRefreshTimer.Tick -= OnDiskRefreshTimerTick;
         }
 
         [RelayCommand]
