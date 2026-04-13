@@ -271,9 +271,10 @@ namespace SysSuite.Services
                         return false;
                     if (need > (uint)expandCapChars)
                     {
-                        NativeMemory.Free(expandBuf);
                         expandCapChars = (int)Math.Min(need + 256, 32_768);
-                        expandBuf = (char*)NativeMemory.Alloc((nuint)(expandCapChars * sizeof(char)));
+                        char* newBuf = (char*)NativeMemory.Alloc((nuint)(expandCapChars * sizeof(char)));
+                        NativeMemory.Free(expandBuf);
+                        expandBuf = newBuf;
                         continue;
                     }
 

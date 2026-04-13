@@ -329,7 +329,7 @@ namespace SysSuite.Services
                 {
                     var loc = Registry.LocalMachine
                         .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
-                        ?.OpenSubKey(app.Name)
+                        ?.OpenSubKey(app.RegistryKeyName)
                         ?.GetValue("InstallLocation")?.ToString();
                     if (string.IsNullOrEmpty(loc) || !Directory.Exists(loc)) continue;
 

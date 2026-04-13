@@ -15,6 +15,8 @@ namespace SysSuite.Interop
     internal static unsafe class NtProcessInfoReader
     {
         private const uint DefaultBufferSize = 1024 * 1024;
+        private const uint MaxBufferSize = 256 * 1024 * 1024;
+        private const uint MaxBufferSize = 256 * 1024 * 1024; // 256 MB: cap contro crescita infinita
         private static uint s_lastGoodBufferSize = DefaultBufferSize;
 
         internal readonly record struct RawProcessRow(
@@ -45,6 +47,7 @@ namespace SysSuite.Interop
                     if ((uint)status == NtDll.StatusInfoLengthMismatch)
                     {
                         bufferSize = Math.Max(actual + 1024 * 64, bufferSize + 64 * 1024);
+                        if (bufferSize > MaxBufferSize) throw new InvalidOperationException("Buffer NtQuery oltre 256 MB");
                         continue;
                     }
 

@@ -238,5 +238,6 @@ namespace SysSuite.Models
         /// <summary>Valore registro DisplayIcon (es. percorso .ico o .exe,indice).</summary>
         public string DisplayIcon { get; set; } = "";
         public int    DaysUnused  { get; set; }
+        public string RegistryKeyName { get; set; } = "";
     }
 }
