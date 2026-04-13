@@ -15,7 +15,6 @@ namespace SysSuite.Interop
     internal static unsafe class NtProcessInfoReader
     {
         private const uint DefaultBufferSize = 1024 * 1024;
-        private const uint MaxBufferSize = 256 * 1024 * 1024;
         private const uint MaxBufferSize = 256 * 1024 * 1024; // 256 MB: cap contro crescita infinita
         private static uint s_lastGoodBufferSize = DefaultBufferSize;
 
