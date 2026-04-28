@@ -1,11 +1,11 @@
-# Genera SysSuite_CodeSign.pfx nella cartella indicata (solo se mancante).
+# Genera SysSuite_Firma.pfx nella cartella indicata (solo se mancante).
 param(
     [Parameter(Mandatory = $true)]
     [string] $OutputRoot
 )
 
 $ErrorActionPreference = 'Stop'
-$pfxPath = Join-Path $OutputRoot 'SysSuite_CodeSign.pfx'
+$pfxPath = Join-Path $OutputRoot 'SysSuite_Firma.pfx'
 
 if (Test-Path -LiteralPath $pfxPath) {
     Write-Host '[OK] Certificato gia presente'
@@ -24,5 +24,5 @@ $cert = New-SelfSignedCertificate `
 
 $pfxPassword = ConvertTo-SecureString -String 'SysSuite2024!' -AsPlainText -Force
 Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $pfxPassword | Out-Null
-Write-Host '[OK] Creato SysSuite_CodeSign.pfx'
+Write-Host '[OK] Creato SysSuite_Firma.pfx'
 exit 0

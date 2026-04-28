@@ -275,7 +275,7 @@
                                         <TextBlock Text="{x:Bind ViewModel.HardwareSnapshot.DisplayText, Mode=OneWay}" FontFamily="Consolas"
                                             Style="{StaticResource DashSecondaryBodyStyle}" FontSize="11"/>
                                         <StackPanel Spacing="8">
-                                            <TextBlock Text="UTILIZZO GPU (DXGI)" Style="{StaticResource SysHeading3}"/>
+                                            <TextBlock Text="UTILIZZO GPU (motori Win)" Style="{StaticResource SysHeading3}"/>
                                             <TextBlock FontFamily="Consolas" FontSize="32" FontWeight="Bold"
                                                 Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"
                                                 Text="{x:Bind ViewModel.GpuUsagePercentage, Mode=OneWay}"/>
@@ -287,7 +287,7 @@
                                             <ProgressBar Style="{StaticResource DashGpuVramBarStyle}"
                                                 Foreground="{x:Bind ViewModel.GpuBrandBrush, Mode=OneWay}"
                                                 Value="{x:Bind ViewModel.GpuUsagePercentValue, Mode=OneWay}"/>
-                                            <TextBlock Text="Barra: utilizzo motore DXGI (0–100%). Dettaglio allocazione in riga VRAM."
+                                            <TextBlock Text="Barra: picco motori (3D/Compute/decodifica), come Gestione attività. Se mancano i contatori, il valore è allocazione VRAM DXGI (meno adatto al training AI)."
                                                 Style="{StaticResource DashSecondaryBodyStyle}" FontSize="10" Opacity="0.85"
                                                 TextWrapping="Wrap"/>
                                         </StackPanel>

@@ -19,7 +19,7 @@ using SysSuite.Services;
 namespace SysSuite.ViewModels
 {
     /// <summary>
-    /// Dashboard: <see cref="SystemInfo.GatherAll"/> all'avvio. Donut disco (LiveCharts) aggiornato ogni 30 s; GPU DXGI ogni 10 s.
+    /// Dashboard: <see cref="SystemInfo.GatherAll"/> all'avvio. Donut disco (LiveCharts) aggiornato ogni 30 s; GPU motori DXGI+perf ogni 10 s.
     /// </summary>
     public partial class HubViewModel : ObservableObject, IDisposable
     {
@@ -121,12 +121,12 @@ namespace SysSuite.ViewModels
 
         [ObservableProperty] private HardwareSnapshotDisplay _hardwareSnapshot = HardwareSnapshotDisplay.Empty;
 
-        /// <summary>Percentuale uso GPU (stringa es. <c>42%</c>) da <see cref="GpuMonitorService"/> DXGI.</summary>
+        /// <summary>Carico motori GPU (contatori Windows) o fallback allocazione VRAM DXGI — vedi <see cref="GpuMonitorService"/>.</summary>
         [ObservableProperty] private string _gpuUsagePercentage = "—";
 
         /// <summary>VRAM usata/totale formattata da DXGI (<see cref="GpuMonitorService"/>).</summary>
         [ObservableProperty] private string _gpuUsedVram = "—";
-        /// <summary>0–100 uso GPU per ProgressBar (aggiornamento lento).</summary>
+        /// <summary>0–100: motori se disponibili, altrimenti percentuale VRAM DXGI.</summary>
         [ObservableProperty] private double _gpuUsagePercentValue;
 
         /// <summary>Colore brand GPU (icona + barra VRAM); aggiornato solo se il vendor DXGI cambia.</summary>
@@ -380,9 +380,18 @@ namespace SysSuite.ViewModels
 
         private void ApplyGpuMetricsToProperties(GpuMetrics gpuMetrics)
         {
-            GpuUsagePercentage = gpuMetrics.UsagePercentage.ToString("0.#") + "%";
+            if (gpuMetrics.EngineUtilizationPercent is { } eng)
+            {
+                GpuUsagePercentage = eng.ToString("0.#") + "%";
+                GpuUsagePercentValue = eng;
+            }
+            else
+            {
+                GpuUsagePercentage = gpuMetrics.VramUsagePercent.ToString("0.#") + "% (solo VRAM)";
+                GpuUsagePercentValue = gpuMetrics.VramUsagePercent;
+            }
+
             GpuUsedVram = FormatBytes(gpuMetrics.UsedVramBytes) + " / " + FormatBytes(gpuMetrics.TotalVramBytes);
-            GpuUsagePercentValue = gpuMetrics.UsagePercentage;
             TrySetGpuBrandBrushFromAdapterName(gpuMetrics.Name);
         }
 
