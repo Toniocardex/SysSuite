@@ -39,7 +39,10 @@ namespace SysSuite.Core
             var stdoutTask = Task.Run(() => p.StandardOutput.ReadToEnd());
             var stderrTask = Task.Run(() => p.StandardError.ReadToEnd());
             p.WaitForExit();
-            return (p.ExitCode, stdoutTask.GetAwaiter().GetResult());
+            Task.WaitAll(stdoutTask, stderrTask);
+            string stdout = stdoutTask.GetAwaiter().GetResult();
+            string stderr = stderrTask.GetAwaiter().GetResult();
+            return (p.ExitCode, MergeProcessOutput(stdout, stderr));
         }
 
         /// <summary>Versione asincrona di <see cref="Run"/> — non blocca il thread UI.</summary>
@@ -75,7 +78,16 @@ namespace SysSuite.Core
             int exit = p.ExitCode;
             if (exit != 0)
                 Log.Warning("Processo terminato con codice {ExitCode}: {FileName} {Arguments}", exit, fileName, arguments);
-            return (exit, await stdoutTask.ConfigureAwait(false));
+            string stdout = await stdoutTask.ConfigureAwait(false);
+            string stderr = await stderrTask.ConfigureAwait(false);
+            return (exit, MergeProcessOutput(stdout, stderr));
+        }
+
+        private static string MergeProcessOutput(string stdout, string stderr)
+        {
+            if (string.IsNullOrWhiteSpace(stderr)) return stdout;
+            if (string.IsNullOrWhiteSpace(stdout)) return stderr;
+            return stdout + Environment.NewLine + "[stderr]" + Environment.NewLine + stderr;
         }
 
         private static Process NewHiddenProcess(string fileName, string arguments) =>

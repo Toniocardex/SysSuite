@@ -19,11 +19,13 @@ namespace SysSuite.Services
             @"SYSTEM\CurrentControlSet\Services",
         };
 
-        public List<Models.RegistryIssue> Scan(IProgress<string>? progress = null)
+        public List<Models.RegistryIssue> Scan(IProgress<string>? progress = null,
+            CancellationToken cancellationToken = default)
         {
             var issues = new List<Models.RegistryIssue>();
             foreach (var path in ScanPaths)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report(path);
                 try
                 {
@@ -31,17 +33,18 @@ namespace SysSuite.Services
                     if (key == null) continue;
                     foreach (var sub in key.GetSubKeyNames())
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         using var entry = key.OpenSubKey(sub);
                         if (entry == null) continue;
 
                         // Controlla DLL mancanti
                         foreach (var val in entry.GetValueNames())
                         {
+                            cancellationToken.ThrowIfCancellationRequested();
                             string? data = entry.GetValue(val)?.ToString();
                             if (data == null) continue;
-                            if ((data.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-                                 data.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) &&
-                                data.Contains('\\') && !File.Exists(data.Trim('"')))
+                            if (TryExtractExecutablePath(data, out string executablePath) &&
+                                !File.Exists(executablePath))
                             {
                                 issues.Add(new Models.RegistryIssue
                                 {
@@ -62,7 +65,7 @@ namespace SysSuite.Services
 
         public Task<List<Models.RegistryIssue>> ScanAsync(IProgress<string>? progress = null,
             CancellationToken cancellationToken = default) =>
-            Task.Run(() => Scan(progress), cancellationToken);
+            Task.Run(() => Scan(progress, cancellationToken), cancellationToken);
 
         public async Task<string> BackupAsync(string backupName, CancellationToken cancellationToken = default)
         {
@@ -75,5 +78,25 @@ namespace SysSuite.Services
         }
 
         private void Emit(string msg, string type) => Log?.Invoke(msg, type);
+
+        private static bool TryExtractExecutablePath(string rawValue, out string path)
+        {
+            path = string.Empty;
+            if (string.IsNullOrWhiteSpace(rawValue))
+                return false;
+
+            string expanded = Environment.ExpandEnvironmentVariables(rawValue).Trim();
+            var (fileName, _) = UninstallCommandParser.SplitExecutableAndArguments(expanded);
+            if (string.IsNullOrWhiteSpace(fileName))
+                return false;
+
+            string trimmed = fileName.Trim().Trim('"');
+            if (!(trimmed.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+                  trimmed.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
+                return false;
+
+            path = trimmed;
+            return path.Contains('\\');
+        }
     }
 }
