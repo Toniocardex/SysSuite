@@ -40,6 +40,9 @@ namespace SysSuite
             services.AddSingleton<GpuMonitorService>();
             services.AddSingleton<StorageHealthService>();
             services.AddSingleton<SystemRestoreService>();
+            services.AddSingleton<SystemRepairService>();
+            services.AddSingleton<PerformanceService>();
+            services.AddSingleton<ReportService>();
             services.AddSingleton<NetworkOptimizationService>();
             services.AddSingleton<PowerOptimizationService>();
             services.AddTransient<SystemInfo>();
@@ -54,6 +57,7 @@ namespace SysSuite
             services.AddSingleton<StartupEntriesService>();
             services.AddSingleton<LeftoverScannerService>();
             services.AddTransient<AppManagerViewModel>();
+            services.AddTransient<WindowsServicesViewModel>();
             services.AddTransient(sp => new MonitorViewModel(
                 DispatcherQueue.GetForCurrentThread()
                     ?? throw new InvalidOperationException(

@@ -16,21 +16,28 @@ namespace SysSuite.Views
     {
         private sealed record ServiceUiRow(string Name, string Description, string Status, SolidColorBrush StatusColor);
 
-        private readonly CleanupService      _clean   = new();
-        private readonly SystemRepairService _repair  = new();
-        private readonly PerformanceService  _perf    = new();
-        private readonly ReportService       _report  = new();
-        private readonly ServicesManager    _services;
-        private readonly WindowsServicesViewModel _servicesVm = new();
+        private readonly CleanupService _clean;
+        private readonly SystemRepairService _repair;
+        private readonly PerformanceService _perf;
+        private readonly ReportService _report;
+        private readonly ServicesManager _services;
+        private readonly WindowsServicesViewModel _servicesVm;
 
         private readonly UIElement[] _tabs;
-        private readonly Button[]    _tabBtns;
+        private readonly Button[] _tabBtns;
         private int _currentTab = 0;
 
         public MainSuitePage()
         {
             InitializeComponent();
-            _services = new ServicesManager(App.Services.GetRequiredService<SystemRestoreService>());
+
+            var sp = App.Services;
+            _clean = sp.GetRequiredService<CleanupService>();
+            _repair = sp.GetRequiredService<SystemRepairService>();
+            _perf = sp.GetRequiredService<PerformanceService>();
+            _report = sp.GetRequiredService<ReportService>();
+            _servicesVm = sp.GetRequiredService<WindowsServicesViewModel>();
+            _services = new ServicesManager(sp.GetRequiredService<SystemRestoreService>());
             _clean.Log    += AppendLog;
             _repair.Log   += AppendLog;
             _perf.Log     += AppendLog;

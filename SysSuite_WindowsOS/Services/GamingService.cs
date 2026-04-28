@@ -12,9 +12,9 @@ namespace SysSuite.Services
 
         public bool IsActive { get; private set; } = false;
 
-        private readonly PerformanceService _perf = new();
-        private readonly NetworkService     _net  = new();
-        private readonly ServicesManager    _svc;
+        private readonly PerformanceService _perf;
+        private readonly NetworkService _net;
+        private readonly ServicesManager _svc;
 
         private string _prevPowerPlan = "";
 
@@ -24,8 +24,10 @@ namespace SysSuite.Services
         private static readonly string[] BackgroundServices =
             { "wuauserv", "bits", "OneSyncSvc" };
 
-        public GamingService(SystemRestoreService systemRestore)
+        public GamingService(SystemRestoreService systemRestore, PerformanceService perf, NetworkService net)
         {
+            _perf = perf;
+            _net = net;
             _svc = new ServicesManager(systemRestore);
             // Registra i handler una sola volta per evitare log duplicati
             _perf.Log += (m, t) => Log?.Invoke(m, t);
