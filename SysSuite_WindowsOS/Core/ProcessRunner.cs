@@ -40,7 +40,9 @@ namespace SysSuite.Core
             var stderrTask = Task.Run(() => p.StandardError.ReadToEnd());
             p.WaitForExit();
             Task.WaitAll(stdoutTask, stderrTask);
-            return (p.ExitCode, stdoutTask.GetAwaiter().GetResult());
+            string stdout = stdoutTask.GetAwaiter().GetResult();
+            string stderr = stderrTask.GetAwaiter().GetResult();
+            return (p.ExitCode, MergeProcessOutput(stdout, stderr));
         }
 
         /// <summary>Versione asincrona di <see cref="Run"/> — non blocca il thread UI.</summary>
@@ -76,7 +78,22 @@ namespace SysSuite.Core
             int exit = p.ExitCode;
             if (exit != 0)
                 Log.Warning("Processo terminato con codice {ExitCode}: {FileName} {Arguments}", exit, fileName, arguments);
-            return (exit, await stdoutTask.ConfigureAwait(false));
+            string stdout = await stdoutTask.ConfigureAwait(false);
+            string stderr = await stderrTask.ConfigureAwait(false);
+            return (exit, MergeProcessOutput(stdout, stderr));
+        }
+
+        /// <summary>Unisce stdout e stderr (es. errori su pipe separato) senza perdere testo.</summary>
+        private static string MergeProcessOutput(string stdout, string stderr)
+        {
+            stdout ??= "";
+            stderr = (stderr ?? "").Trim();
+            if (stderr.Length == 0)
+                return stdout;
+            stdout = stdout.TrimEnd();
+            if (stdout.Length == 0)
+                return stderr;
+            return stdout + Environment.NewLine + stderr;
         }
 
         private static Process NewHiddenProcess(string fileName, string arguments) =>
