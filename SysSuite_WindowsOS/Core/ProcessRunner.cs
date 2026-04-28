@@ -39,6 +39,7 @@ namespace SysSuite.Core
             var stdoutTask = Task.Run(() => p.StandardOutput.ReadToEnd());
             var stderrTask = Task.Run(() => p.StandardError.ReadToEnd());
             p.WaitForExit();
+            Task.WaitAll(stdoutTask, stderrTask);
             return (p.ExitCode, stdoutTask.GetAwaiter().GetResult());
         }
 
