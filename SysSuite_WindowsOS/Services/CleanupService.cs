@@ -1,4 +1,5 @@
 using SysSuite.Core;
+using SysSuite.Interop;
 using SysSuite.Models;
 
 namespace SysSuite.Services
@@ -23,7 +24,11 @@ namespace SysSuite.Services
 
         public async Task CleanRecycleBinAsync(CancellationToken cancellationToken = default)
         {
-            await ProcessRunner.RunAsync("cmd.exe", "/c rd /s /q %SystemDrive%\\$Recycle.bin", cancellationToken).ConfigureAwait(false);
+            await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Shell32.EmptyAllRecycleBinsSilently();
+            }, cancellationToken).ConfigureAwait(false);
             Emit("Cestino svuotato", "ok");
         }
 
