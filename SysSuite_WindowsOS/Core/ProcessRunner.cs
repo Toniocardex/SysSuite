@@ -83,11 +83,17 @@ namespace SysSuite.Core
             return (exit, MergeProcessOutput(stdout, stderr));
         }
 
+        /// <summary>Unisce stdout e stderr (es. errori su pipe separato) senza perdere testo.</summary>
         private static string MergeProcessOutput(string stdout, string stderr)
         {
-            if (string.IsNullOrWhiteSpace(stderr)) return stdout;
-            if (string.IsNullOrWhiteSpace(stdout)) return stderr;
-            return stdout + Environment.NewLine + "[stderr]" + Environment.NewLine + stderr;
+            stdout ??= "";
+            stderr = (stderr ?? "").Trim();
+            if (stderr.Length == 0)
+                return stdout;
+            stdout = stdout.TrimEnd();
+            if (stdout.Length == 0)
+                return stderr;
+            return stdout + Environment.NewLine + stderr;
         }
 
         private static Process NewHiddenProcess(string fileName, string arguments) =>
