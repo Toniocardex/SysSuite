@@ -24,11 +24,11 @@ namespace SysSuite.Services
         private static readonly string[] BackgroundServices =
             { "wuauserv", "bits", "OneSyncSvc" };
 
-        public GamingService(SystemRestoreService systemRestore, PerformanceService perf, NetworkService net)
+        public GamingService(PerformanceService perf, NetworkService net, ServicesManager servicesManager)
         {
             _perf = perf;
             _net = net;
-            _svc = new ServicesManager(systemRestore);
+            _svc = servicesManager;
             // Registra i handler una sola volta per evitare log duplicati
             _perf.Log += (m, t) => Log?.Invoke(m, t);
             _net.Log  += (m, t) => Log?.Invoke(m, t);

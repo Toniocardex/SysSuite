@@ -40,6 +40,8 @@ namespace SysSuite
             services.AddSingleton<GpuMonitorService>();
             services.AddSingleton<StorageHealthService>();
             services.AddSingleton<SystemRestoreService>();
+            services.AddTransient<ServicesManager>();
+            services.AddSingleton<RegistryService>();
             services.AddSingleton<SystemRepairService>();
             services.AddSingleton<PerformanceService>();
             services.AddSingleton<ReportService>();
@@ -156,10 +158,11 @@ namespace SysSuite
             {
                 try
                 {
-                    var clean = new SysSuite.Services.CleanupService();
+                    // Stesse istanze singleton del contenitore (già configurato nel costruttore App).
+                    var clean = Services.GetRequiredService<CleanupService>();
                     clean.CleanTemp();
                     clean.CleanThumbnails();
-                    var browser = new SysSuite.Services.BrowserService();
+                    var browser = Services.GetRequiredService<BrowserService>();
                     foreach (var b in browser.DetectBrowsers().Where(b => b.Installed))
                         try { browser.CleanCache(b); } catch { }
                 }

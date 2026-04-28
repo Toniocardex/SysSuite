@@ -37,7 +37,7 @@ namespace SysSuite.Views
             _perf = sp.GetRequiredService<PerformanceService>();
             _report = sp.GetRequiredService<ReportService>();
             _servicesVm = sp.GetRequiredService<WindowsServicesViewModel>();
-            _services = new ServicesManager(sp.GetRequiredService<SystemRestoreService>());
+            _services = sp.GetRequiredService<ServicesManager>();
             _clean.Log    += AppendLog;
             _repair.Log   += AppendLog;
             _perf.Log     += AppendLog;

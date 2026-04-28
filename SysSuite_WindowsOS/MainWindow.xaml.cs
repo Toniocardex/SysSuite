@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media;
 using SysSuite.Core;
+using SysSuite.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SysSuite.Views;
@@ -324,7 +326,7 @@ namespace SysSuite
                     {
                         try
                         {
-                            var svc = new SysSuite.Services.DriverService();
+                            var svc = App.Services.GetRequiredService<DriverService>();
                             var bad = svc.GetProblematicDrivers();
                             if (bad.Count > 0 && !_notifiedDrivers)
                             {

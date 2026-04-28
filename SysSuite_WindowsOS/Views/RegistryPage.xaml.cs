@@ -1,5 +1,7 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SysSuite;
 using SysSuite.Core;
 using SysSuite.Models;
 using SysSuite.Services;
@@ -8,11 +10,12 @@ namespace SysSuite.Views
 {
     public sealed partial class RegistryPage : Page
     {
-        private readonly RegistryService _svc = new();
+        private readonly RegistryService _svc;
 
         public RegistryPage()
         {
             InitializeComponent();
+            _svc = App.Services.GetRequiredService<RegistryService>();
         }
 
         private async void BtnScan_Click(object sender, RoutedEventArgs e)
